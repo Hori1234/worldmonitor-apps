@@ -1,0 +1,25 @@
+{
+  "id": "e0547d6d-2eee-4cdf-93bb-10c589a01af2",
+  "name": "Test 2",
+  "enabled": true,
+  "description": "",
+  "trigger": {
+    "icmType": "*",
+    "filter": null,
+    "threshold": {
+      "count": 1,
+      "windowMs": 60000,
+      "resetAfterFire": true
+    }
+  },
+  "actions": [
+    {
+      "actionType": "email",
+      "to": [],
+      "subject": "",
+      "bodyTemplate": ""
+    }
+  ],
+  "createdAt": "2026-05-17T18:24:04.699Z",
+  "updatedAt": "2026-05-17T18:24:04.699Z"
+}

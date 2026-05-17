@@ -176,7 +176,12 @@ button.accent:hover { background: #33dd77; }
   color: var(--kind-color, var(--accent)); border-radius: 3px; cursor: pointer; line-height: 1; }
 .node-menu-btn  { opacity: 0; transition: opacity .12s; font-size: 11px; padding: 0 4px; border: none; background: none; cursor: pointer; color: var(--text-2); }
 .canvas-node:hover .node-test-btn,
-.canvas-node:hover .node-menu-btn { opacity: 1; }
+.canvas-node:hover .node-menu-btn,
+.canvas-node:hover .node-jump-rule-btn { opacity: 1; }
+.node-jump-rule-btn { opacity: 0; transition: opacity .12s; font-size: 10px; padding: 1px 5px;
+  border: 1px solid color-mix(in srgb, #ffcc33 60%, transparent);
+  background: color-mix(in srgb, #ffcc33 15%, transparent);
+  color: #ffcc33; border-radius: 3px; cursor: pointer; line-height: 1; }
 
 .node-body {
   padding: 6px 8px 8px;
@@ -226,6 +231,28 @@ button.accent:hover { background: #33dd77; }
 .canvas-edge { fill: none; stroke: var(--border-2); stroke-width: 1.5; pointer-events: all; cursor: pointer; }
 .canvas-edge:hover { stroke: var(--accent); }
 .canvas-edge.selected { stroke: var(--accent); }
+
+/* Edge info node (floating metadata popup on edge click) */
+.edge-info-node { border-color: var(--border-2) !important; --kind-color: #888; }
+.edge-info-connector { pointer-events: none; }
+.edge-info-save-btn {
+  font-size: 11px; padding: 1px 7px; border: none; border-radius: 3px; cursor: pointer;
+  background: var(--accent); color: var(--bg); font-weight: 700; line-height: 1; flex-shrink: 0;
+}
+.edge-info-save-btn:hover { opacity: .85; }
+.edge-info-delete-btn {
+  font-size: 11px; padding: 1px 5px; border: none; border-radius: 3px; cursor: pointer;
+  background: var(--danger); color: #fff; font-weight: 700; line-height: 1;
+  margin-left: 2px; flex-shrink: 0;
+}
+.edge-info-delete-btn:hover { opacity: .85; }
+.edge-info-pin-btn {
+  font-size: 11px; padding: 1px 5px; border: 1px solid var(--border); border-radius: 3px;
+  cursor: pointer; background: transparent; color: var(--text-2); line-height: 1;
+  flex-shrink: 0; margin-right: 2px; transition: background .12s, color .12s, border-color .12s;
+}
+.edge-info-pin-btn:hover { background: var(--bg-hover); color: var(--text); }
+.edge-info-pin-btn.pinned { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
 /* Modal overlay (center-screen) */
 .modal-overlay {

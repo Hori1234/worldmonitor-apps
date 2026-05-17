@@ -5,11 +5,11 @@
 import './style.css';
 import { initNotifications }    from './notifications.js';
 import { initProfileSelector, getCurrentProfileId } from './profile-selector.js';
-import { initCanvas, loadCanvasState, getCanvasState, clearCanvas, removeNode, updateEdgeMeta } from './canvas.js';
+import { initCanvas, loadCanvasState, getCanvasState, clearCanvas, removeNode, updateEdgeMeta, updateNodeData } from './canvas.js';
 import { initNodePalette }      from './node-palette.js';
 import { initNodeConfig, openFlyout, initEdgeModal, openEdgeModal } from './node-config.js';
 import { initObjectsBrowser }   from './objects-browser.js';
-import { initEdgeRuleBuilder }  from './edge-rule-builder.js';
+import { initEdgeRuleBuilder, syncEdgeRuleNode, navigateToRule }  from './edge-rule-builder.js';
 import { connectWS }            from './api.js';
 import * as api                 from './api.js';
 import { toast }                from './toast.js';
@@ -52,6 +52,27 @@ function initHealthPolling() {
 
 const _lsKey = (id) => `nc:canvas:${id}`;
 
+// ── Edge rule sync ────────────────────────────────────────────────────────────
+
+let _syncingRules = false;
+
+async function _syncEdgeRuleNodes() {
+  if (_syncingRules) return;
+  _syncingRules = true;
+  try {
+    const state = getCanvasState();
+    for (const node of state.nodes) {
+      if (node.kind !== 'edgeRule') continue;
+      const ruleId = await syncEdgeRuleNode(node.id, node.data);
+      if (ruleId && ruleId !== node.data._ruleId) {
+        updateNodeData(node.id, { _ruleId: ruleId });
+      }
+    }
+  } finally {
+    _syncingRules = false;
+  }
+}
+
 /** Load from service; fall back to localStorage if service is offline. */
 async function _loadCanvas(profileId) {
   if (!profileId) { clearCanvas(); return; }
@@ -59,6 +80,7 @@ async function _loadCanvas(profileId) {
     const res = await api.getCanvas(profileId);
     if (res.ok && res.canvas) {
       loadCanvasState(res.canvas);
+      await _syncEdgeRuleNodes();
       return;
     }
   } catch { /* service offline */ }
@@ -67,6 +89,7 @@ async function _loadCanvas(profileId) {
     const stored = localStorage.getItem(_lsKey(profileId));
     if (stored) loadCanvasState(JSON.parse(stored));
   } catch { /* corrupt data */ }
+  await _syncEdgeRuleNodes();
 }
 
 /** Save to service AND localStorage. */
@@ -85,6 +108,17 @@ async function _saveCanvas(profileId) {
   } catch (e) {
     toast(`Saved locally (service: ${e.message})`, 'warn');
   }
+}
+
+/** Silent auto-save: no toast, used for debounced saves. */
+async function _autoSave(profileId) {
+  if (!profileId) return;
+  const state = getCanvasState();
+  try { localStorage.setItem(_lsKey(profileId), JSON.stringify(state)); } catch { /* quota */ }
+  try {
+    const res = await api.saveCanvas(profileId, state);
+    if (!res.ok) throw new Error(res.error);
+  } catch { /* silent */ }
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
@@ -127,6 +161,21 @@ function init() {
   // WebSocket
   connectWS(() => {
     console.log('[nc] WebSocket connected');
+  });
+
+  // Auto-save canvas after every change (debounced 1.5 s)
+  let _autoSaveTimer = null;
+  document.addEventListener('nc:canvas:change', () => {
+    clearTimeout(_autoSaveTimer);
+    _autoSaveTimer = setTimeout(() => {
+      _autoSave(getCurrentProfileId());
+      if (!_syncingRules) _syncEdgeRuleNodes();
+    }, 1500);
+  });
+
+  // Navigate to edge rule tab from canvas jump button
+  document.addEventListener('nc:canvas:navigateToRule', (e) => {
+    navigateToRule(e.detail?.ruleId ?? null);
   });
 }
 

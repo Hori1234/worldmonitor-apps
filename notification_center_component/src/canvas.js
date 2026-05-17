@@ -35,6 +35,8 @@ let _containerEl  = null; // cached container element
 
 // pending edge drag
 let _pendingEdge = null; // { fromNodeId, fromPortIdx, el (SVG path), x0, y0 }
+// active edge info node
+let _activeEdgeInfo = null; // { edgeId, nodeEl, lineEl, _cleanup }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
@@ -55,6 +57,7 @@ export function initCanvas({ onNodeOpen, onDelete, onEdgeCreate } = {}) {
     if (e.button !== 0) return;
     if (e.target.closest('.canvas-node')) return; // let node drag handle it
     if (_pendingEdge) { _cancelPendingEdge(); return; }
+    if (!_activeEdgeInfo?.pinned) _closeEdgeInfoNode(); // auto-save on canvas background click (skip when pinned)
     panning  = true;
     panStart = { x: e.clientX - viewport.x, y: e.clientY - viewport.y };
     container.style.cursor = 'grabbing';
@@ -119,6 +122,7 @@ export function addNode(kind, x = 100, y = 100) {
   const node = { id: crypto.randomUUID(), kind, x, y, w: 180, h: 100, data: { inputs: 1, outputs: 1 } };
   nodes.push(node);
   _renderNode(node);
+  _notifyChange();
   return node;
 }
 
@@ -135,6 +139,7 @@ export function updateNodeData(id, data) {
     if (bodyEl)  bodyEl.innerHTML = _nodeBodyHtml(node);
     if (needPortUpdate) { _renderPorts(el, node); _renderAllEdges(); }
   }
+  _notifyChange();
 }
 
 export function updateEdgeMeta(id, meta) {
@@ -142,6 +147,7 @@ export function updateEdgeMeta(id, meta) {
   if (!edge) return;
   edge.meta = { ...edge.meta, ...meta };
   _renderAllEdges();
+  _notifyChange();
 }
 
 export function removeNode(id) {
@@ -149,6 +155,7 @@ export function removeNode(id) {
   edges = edges.filter((e) => e.fromNodeId !== id && e.toNodeId !== id);
   document.querySelector(`.canvas-node[data-id="${id}"]`)?.remove();
   _renderAllEdges();
+  _notifyChange();
 }
 
 export function loadCanvasState(state) {
@@ -199,6 +206,7 @@ function _renderNode(node) {
     <div class="node-header">
       <span class="node-kind-icon">${KIND_ICONS[node.kind] ?? '\ud83d\udd14'}</span>
       <span class="node-title">${_esc(_nodeLabel(node))}</span>
+      ${node.kind === 'edgeRule' ? '<button class="node-jump-rule-btn" title="Open in Edge Rules">↗</button>' : ''}
       <button class="node-test-btn" title="Test trigger">▶</button>
       <button class="node-menu-btn" title="Configure">⚙</button>
     </div>
@@ -217,6 +225,14 @@ function _renderNode(node) {
     e.stopPropagation();
     const n = nodes.find((n) => n.id === node.id);
     if (n) _onNodeOpen?.(n);
+  });
+
+  // Jump to edge rule tab (edgeRule nodes only)
+  el.querySelector('.node-jump-rule-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.dispatchEvent(new CustomEvent('nc:canvas:navigateToRule', {
+      detail: { ruleId: node.data._ruleId },
+    }));
   });
 
   _makeDraggable(el, node);
@@ -305,7 +321,7 @@ function _makeDraggable(el, node) {
   });
 
   window.addEventListener('mouseup', (e) => {
-    if (dragging && e.button === 0) { dragging = false; el.classList.remove('selected'); }
+    if (dragging && e.button === 0) { dragging = false; el.classList.remove('selected'); _notifyChange(); }
   });
 }
 
@@ -331,6 +347,7 @@ function _makeResizable(el, node) {
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      _notifyChange();
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -385,6 +402,7 @@ function _finishEdge(toNodeId, toPortIdx) {
   edges.push(edge);
   _pendingEdge = null;
   _renderAllEdges();
+  _notifyChange();
   _onEdgeCreate?.(edge); // open edge config popup
 }
 
@@ -417,11 +435,9 @@ function _renderAllEdges() {
     path.setAttribute('d', `M${from.x},${from.y} C${from.x + dx},${from.y} ${to.x - dx},${to.y} ${to.x},${to.y}`);
     path.dataset.edgeId = edge.id;
 
-    path.addEventListener('dblclick', () => {
-      if (confirm('Remove this connection?')) {
-        edges = edges.filter((e) => e.id !== edge.id);
-        _renderAllEdges();
-      }
+    path.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _openEdgeInfoNode(edge);
     });
     svg.appendChild(path);
 
@@ -438,6 +454,148 @@ function _renderAllEdges() {
       svg.appendChild(text);
     }
   }
+  _updateEdgeInfoConnector();
+}
+
+// ── Edge info node ────────────────────────────────────────────────────────────
+
+function _openEdgeInfoNode(edge) {
+  _closeEdgeInfoNode();
+
+  const from = _portWorldPos(edge.fromNodeId, 'out', edge.fromPortIdx ?? 0);
+  const to   = _portWorldPos(edge.toNodeId,   'in',  edge.toPortIdx   ?? 0);
+  if (!from || !to) return;
+
+  const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+
+  const world = document.getElementById('canvas-world');
+  const svg   = document.getElementById('canvas-svg');
+  if (!world || !svg) return;
+
+  const meta     = edge.meta ?? {};
+  const metaKeys = Object.keys(meta).filter((k) => meta[k] !== undefined && meta[k] !== '');
+  const label    = meta.label || 'Edge';
+  const bodyHtml = metaKeys.length
+    ? metaKeys.map((k) =>
+        `<span class="body-kv"><span class="body-key">${_esc(k)}</span><span class="body-val">${_esc(String(meta[k]))}</span></span>`
+      ).join('')
+    : '<span class="body-hint">No metadata — click ⚙ on the node to configure</span>';
+
+  const nodeX = mid.x + 50;
+  const nodeY = mid.y - 140;
+
+  const nodeEl = document.createElement('div');
+  nodeEl.className = 'canvas-node edge-info-node';
+  nodeEl.dataset.edgeId = edge.id;
+  nodeEl.style.cssText  = `left:${nodeX}px;top:${nodeY}px;width:220px;z-index:100;`;
+
+  nodeEl.innerHTML = `
+    <div class="node-header">
+      <span class="node-kind-icon">🔗</span>
+      <span class="node-title">${_esc(label)}</span>
+      <button class="edge-info-pin-btn" title="Pin to canvas">📌</button>
+      <button class="edge-info-save-btn" title="Close">✓</button>
+      <button class="edge-info-delete-btn" title="Delete edge">🗑</button>
+    </div>
+    <div class="node-body">${bodyHtml}</div>
+  `;
+
+  nodeEl.querySelector('.edge-info-pin-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    _activeEdgeInfo.pinned = !_activeEdgeInfo.pinned;
+    const isPinned = _activeEdgeInfo.pinned;
+    nodeEl.querySelector('.edge-info-pin-btn').classList.toggle('pinned', isPinned);
+    nodeEl.querySelector('.edge-info-save-btn').style.display   = isPinned ? 'none' : '';
+    nodeEl.querySelector('.edge-info-delete-btn').style.display = isPinned ? 'none' : '';
+  });
+
+  nodeEl.querySelector('.edge-info-save-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    _closeEdgeInfoNode();
+  });
+
+  nodeEl.querySelector('.edge-info-delete-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    edges = edges.filter((ed) => ed.id !== edge.id);
+    _closeEdgeInfoNode();
+    _renderAllEdges();
+    _notifyChange();
+  });
+
+  // Prevent canvas mousedown from auto-saving while interacting with this node
+  nodeEl.addEventListener('mousedown', (e) => e.stopPropagation());
+
+  // Draggable by header
+  let dragging = false, ox = 0, oy = 0;
+  const onHeaderDown = (e) => {
+    if (e.button !== 0) return;
+    e.stopPropagation(); e.preventDefault();
+    const rect = _containerEl.getBoundingClientRect();
+    ox = (e.clientX - rect.left - viewport.x) / viewport.zoom - parseFloat(nodeEl.style.left);
+    oy = (e.clientY - rect.top  - viewport.y) / viewport.zoom - parseFloat(nodeEl.style.top);
+    dragging = true;
+  };
+  const onDragMove = (e) => {
+    if (!dragging) return;
+    const rect = _containerEl.getBoundingClientRect();
+    nodeEl.style.left = `${(e.clientX - rect.left - viewport.x) / viewport.zoom - ox}px`;
+    nodeEl.style.top  = `${(e.clientY - rect.top  - viewport.y) / viewport.zoom - oy}px`;
+    _updateEdgeInfoConnector();
+  };
+  const onDragUp = () => { dragging = false; };
+
+  nodeEl.querySelector('.node-header').addEventListener('mousedown', onHeaderDown);
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('mouseup',  onDragUp);
+
+  world.appendChild(nodeEl);
+
+  // SVG dotted connector from edge midpoint to info node centre
+  const lineEl = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  lineEl.setAttribute('class', 'edge-info-connector');
+  lineEl.setAttribute('stroke', 'var(--border-2, #444)');
+  lineEl.setAttribute('stroke-dasharray', '5 3');
+  lineEl.setAttribute('stroke-width', '1');
+  _positionConnectorLine(lineEl, mid, nodeEl);
+  svg.appendChild(lineEl);
+
+  _activeEdgeInfo = {
+    edgeId: edge.id, nodeEl, lineEl, pinned: false,
+    _cleanup: () => {
+      window.removeEventListener('mousemove', onDragMove);
+      window.removeEventListener('mouseup',  onDragUp);
+    },
+  };
+}
+
+function _closeEdgeInfoNode() {
+  if (!_activeEdgeInfo) return;
+  _activeEdgeInfo._cleanup?.();
+  _activeEdgeInfo.nodeEl.remove();
+  _activeEdgeInfo.lineEl.remove();
+  _activeEdgeInfo = null;
+}
+
+function _updateEdgeInfoConnector() {
+  if (!_activeEdgeInfo) return;
+  const edge = edges.find((e) => e.id === _activeEdgeInfo.edgeId);
+  if (!edge) { _closeEdgeInfoNode(); return; }
+  const from = _portWorldPos(edge.fromNodeId, 'out', edge.fromPortIdx ?? 0);
+  const to   = _portWorldPos(edge.toNodeId,   'in',  edge.toPortIdx   ?? 0);
+  if (!from || !to) return;
+  const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+  _positionConnectorLine(_activeEdgeInfo.lineEl, mid, _activeEdgeInfo.nodeEl);
+}
+
+function _positionConnectorLine(lineEl, mid, nodeEl) {
+  const nx = parseFloat(nodeEl.style.left);
+  const ny = parseFloat(nodeEl.style.top);
+  const nw = nodeEl.offsetWidth  || 220;
+  const nh = nodeEl.offsetHeight || 80;
+  lineEl.setAttribute('x1', mid.x);
+  lineEl.setAttribute('y1', mid.y);
+  lineEl.setAttribute('x2', nx + nw / 2);
+  lineEl.setAttribute('y2', ny + nh / 2);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -520,6 +678,10 @@ function _nodeLabel(node) {
   if (d.ruleName) return d.ruleName;
   if (d.category) return d.category;
   return KIND_LABELS[node.kind] ?? node.kind;
+}
+
+function _notifyChange() {
+  document.dispatchEvent(new CustomEvent('nc:canvas:change'));
 }
 
 function _esc(str) {

@@ -3,14 +3,14 @@
   "name": "Intel Notification",
   "description": "",
   "createdAt": "2026-05-17T17:00:39.630Z",
-  "updatedAt": "2026-05-17T17:33:35.727Z",
+  "updatedAt": "2026-05-17T18:24:44.404Z",
   "canvas": {
     "nodes": [
       {
         "id": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
         "kind": "market",
-        "x": 835,
-        "y": 238,
+        "x": 942,
+        "y": 230,
         "w": 415,
         "h": 231,
         "data": {
@@ -41,8 +41,8 @@
       {
         "id": "c695fd6a-1be8-4680-b517-7fa4545f7e37",
         "kind": "news",
-        "x": 280,
-        "y": 210,
+        "x": 129,
+        "y": 254,
         "w": 314,
         "h": 183,
         "data": {
@@ -67,12 +67,58 @@
           "title": "intel is coming back",
           "message": ""
         }
+      },
+      {
+        "id": "d1063c22-0d38-4031-9d10-98665d8a1fa2",
+        "kind": "edgeRule",
+        "x": 566,
+        "y": 166,
+        "w": 234,
+        "h": 144,
+        "data": {
+          "inputs": 1,
+          "outputs": 1,
+          "_ruleId": "f94ea6e8-17ff-47f1-a7c3-03d191f17966",
+          "ticker": "",
+          "exchange": "",
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "Test Rule",
+          "icmType": "icm:market-update",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "",
+          "message": ""
+        }
       }
     ],
     "edges": [
       {
-        "id": "ef46ae83-34c1-40cd-834d-42eb63d90bc8",
+        "id": "a7d1312f-d108-4209-8595-4f619bb6f4c0",
         "fromNodeId": "c695fd6a-1be8-4680-b517-7fa4545f7e37",
+        "fromPortIdx": 0,
+        "toNodeId": "d1063c22-0d38-4031-9d10-98665d8a1fa2",
+        "toPortIdx": 0,
+        "meta": {
+          "label": "Stock Update",
+          "icmType": "icm:market-node",
+          "priority": 1,
+          "action": "webhook",
+          "actionTarget": "Ticker",
+          "notes": "Intel stock has changes"
+        }
+      },
+      {
+        "id": "8d520601-37bb-473f-8774-c2803c869bd5",
+        "fromNodeId": "d1063c22-0d38-4031-9d10-98665d8a1fa2",
         "fromPortIdx": 0,
         "toNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
         "toPortIdx": 0,

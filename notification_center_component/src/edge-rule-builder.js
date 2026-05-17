@@ -266,3 +266,61 @@ function _appendLog(msg, isFire = false) {
 function _esc(str) {
   return String(str).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 }
+
+// ── Canvas integration ─────────────────────────────────────────────────────────
+
+/**
+ * Called from canvas when an edgeRule node is added or loaded.
+ * Creates a stub rule in the service if none exists yet for this node.
+ * Returns the ruleId to store back in node.data._ruleId.
+ */
+export async function syncEdgeRuleNode(nodeId, nodeData) {
+  // Already linked — ensure it's in the local list
+  if (nodeData._ruleId) {
+    if (!_rules.find((r) => r.id === nodeData._ruleId)) {
+      try {
+        const res = await api.listRules();
+        _rules = res.rules ?? [];
+        _renderList();
+      } catch { /* offline */ }
+    }
+    return nodeData._ruleId;
+  }
+
+  // Create a stub rule
+  const stubData = {
+    name:        nodeData.ruleName || 'Edge Rule (Canvas)',
+    description: 'Created from canvas builder.',
+    trigger: {
+      icmType:  nodeData.icmType || '*',
+      threshold: {
+        count:    nodeData.count    ? Number(nodeData.count)    : 1,
+        windowMs: nodeData.windowMs ? Number(nodeData.windowMs) : 60000,
+        resetAfterFire: true,
+      },
+    },
+    actions: [],
+  };
+
+  try {
+    const res = await api.createRule(stubData);
+    if (res.ok) {
+      _rules.push(res.rule);
+      _renderList();
+      return res.rule.id;
+    }
+  } catch { /* service offline */ }
+  return null;
+}
+
+/**
+ * Switch to the Edge Rules tab and optionally select a specific rule.
+ */
+export function navigateToRule(ruleId) {
+  document.querySelector('.nav-btn[data-tab="rules"]')?.click();
+  if (!ruleId) return;
+  setTimeout(() => {
+    const rule = _rules.find((r) => r.id === ruleId);
+    if (rule) _selectRule(ruleId);
+  }, 60);
+}

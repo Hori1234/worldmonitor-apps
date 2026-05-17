@@ -1,0 +1,18 @@
+{
+  "id": "f94ea6e8-17ff-47f1-a7c3-03d191f17966",
+  "name": "Edge Rule (Canvas)",
+  "enabled": true,
+  "description": "Created from canvas builder.",
+  "trigger": {
+    "icmType": "*",
+    "filter": null,
+    "threshold": {
+      "count": 1,
+      "windowMs": 60000,
+      "resetAfterFire": true
+    }
+  },
+  "actions": [],
+  "createdAt": "2026-05-17T18:22:42.881Z",
+  "updatedAt": "2026-05-17T18:22:42.881Z"
+}
