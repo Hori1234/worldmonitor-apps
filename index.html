@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web Scraper Suite</title>
+  <link rel="stylesheet" href="/styles/shared.css" />
+  <style>
+    /* ── Page-specific layout variables ── */
+    :root {
+      --header-h: 54px;
+      --nav-h:    40px;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────────── */
+    #root-app { display: flex; flex-direction: column; height: 100vh; }
+
+    /* ── Header ─────────────────────────────────────────────────────── */
+    #root-header {
+      height: var(--header-h); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; gap: 16px;
+      background: var(--bg-2); border-bottom: 1px solid var(--border);
+    }
+    .rh-left  { display: flex; align-items: center; gap: 10px; }
+    .rh-right { display: flex; align-items: center; gap: 10px; }
+    .suite-logo  { font-size: 22px; line-height: 1; }
+    .suite-title { font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
+    .suite-sub   { font-size: 11px; color: var(--text-3); }
+
+    /* Service status pills */
+    .svc-pills { display: flex; align-items: center; gap: 6px; }
+    .svc-pill {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px;
+      background: var(--bg-3); border: 1px solid var(--border);
+      color: var(--text-2); cursor: pointer; text-decoration: none;
+      transition: border-color .15s;
+    }
+    .svc-pill:hover { border-color: var(--accent); color: var(--text); }
+    .svc-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+    .svc-pill.ok  .dot { background: var(--ok);  }
+    .svc-pill.ok  { border-color: rgba(63,185,80,.3); }
+    .svc-pill.err .dot { background: var(--err); }
+    .svc-pill.err { border-color: rgba(248,81,73,.3); }
+    .svc-pill.checking .dot { background: var(--warn); animation: pulse .8s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.3; } }
+
+    /* Open-in-tab button */
+    .btn-open {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 6px; font-size: 11px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-2); cursor: pointer; text-decoration: none;
+      transition: background .12s, color .12s;
+    }
+    .btn-open:hover { background: var(--bg-hover); color: var(--text); }
+
+    /* ── Nav tabs ────────────────────────────────────────────────────── */
+    #root-nav {
+      height: var(--nav-h); flex-shrink: 0;
+      display: flex; align-items: stretch; padding: 0 20px; gap: 2px;
+      background: var(--bg-2); border-bottom: 1px solid var(--border);
+    }
+    .root-nav-btn {
+      display: flex; align-items: center; gap: 7px;
+      background: transparent; border: none; border-bottom: 2px solid transparent;
+      color: var(--text-2); padding: 0 14px; font-size: 13px;
+      font-family: inherit; cursor: pointer;
+      transition: color .12s, border-color .12s;
+      white-space: nowrap;
+    }
+    .root-nav-btn:hover  { color: var(--text); }
+    .root-nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .root-nav-btn .nav-icon { font-size: 15px; line-height: 1; }
+    .root-nav-btn .nav-label { font-weight: 500; }
+    .root-nav-btn .nav-port  { font-size: 10px; color: var(--text-3); font-family: 'Cascadia Code', monospace; }
+
+    /* ── Frame area ──────────────────────────────────────────────────── */
+    #frame-area {
+      flex: 1; position: relative; min-height: 0;
+    }
+    .app-frame {
+      display: none; position: absolute; inset: 0;
+    }
+    .app-frame.active { display: flex; flex-direction: column; }
+    .app-frame iframe {
+      flex: 1; width: 100%; height: 100%; border: none; display: block;
+    }
+
+    /* ── Offline overlay ─────────────────────────────────────────────── */
+    .frame-offline {
+      position: absolute; inset: 0; z-index: 10;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; background: var(--bg); color: var(--text-2); font-size: 13px; text-align: center;
+    }
+    .app-frame.offline .frame-offline { display: flex; }
+    .app-frame.offline iframe          { visibility: hidden; }
+    .offline-icon  { font-size: 48px; line-height: 1; }
+    .offline-title { font-size: 15px; font-weight: 600; color: var(--text); }
+    .offline-url   { font-family: monospace; font-size: 12px; color: var(--text-3); }
+    .btn-retry {
+      padding: 6px 18px; border-radius: 6px; font-size: 12px;
+      background: var(--accent); color: #fff; border: none; cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-retry:hover { opacity: .85; }
+  </style>
+</head>
+<body>
+<div id="root-app">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <header id="root-header">
+    <div class="rh-left">
+      <span class="suite-logo">🔬</span>
+      <div>
+        <div class="suite-title">Web Scraper Suite</div>
+        <div class="suite-sub">Unified dashboard</div>
+      </div>
+    </div>
+
+    <div class="rh-right">
+      <!-- Service health indicators -->
+      <div class="svc-pills">
+        <a class="svc-pill checking" id="pill-scraper-svc" href="http://localhost:3737" target="_blank" title="Scraper service API">
+          <span class="dot"></span>
+          <span>Scraper API :3737</span>
+        </a>
+        <a class="svc-pill checking" id="pill-kg-svc" href="http://localhost:3738" target="_blank" title="Knowledge Graph service API">
+          <span class="dot"></span>
+          <span>KG API :3738</span>
+        </a>
+      </div>
+
+      <!-- Quick open links -->
+      <a class="btn-open" href="http://localhost:5173" target="_blank" title="Open Scraper UI in new tab">↗ :5173</a>
+      <a class="btn-open" href="http://localhost:5174" target="_blank" title="Open KG UI in new tab">↗ :5174</a>
+    </div>
+  </header>
+
+  <!-- ── Tab navigation ──────────────────────────────────────────────── -->
+  <nav id="root-nav">
+    <button class="root-nav-btn active" data-frame="scraper">
+      <span class="nav-icon">🕷</span>
+      <span class="nav-label">Scraper Dashboard</span>
+      <span class="nav-port">:5173</span>
+    </button>
+    <button class="root-nav-btn" data-frame="kg">
+      <span class="nav-icon">⬡</span>
+      <span class="nav-label">Knowledge Graph</span>
+      <span class="nav-port">:5174</span>
+    </button>
+  </nav>
+
+  <!-- ── Frame area ───────────────────────────────────────────────────── -->
+  <div id="frame-area">
+
+    <!-- Scraper Dashboard -->
+    <div class="app-frame active" id="frame-scraper" data-url="http://localhost:5173">
+      <iframe src="http://localhost:5173" title="Scraper Dashboard" id="iframe-scraper"></iframe>
+      <div class="frame-offline">
+        <div class="offline-icon">🕷</div>
+        <div class="offline-title">Scraper Dashboard is offline</div>
+        <div class="offline-url">http://localhost:5173</div>
+        <p style="max-width:320px;color:var(--text-3);font-size:12px;">
+          Run <code style="background:var(--bg-3);padding:2px 6px;border-radius:4px;">npm run dev -w html_scraper_component</code> to start it.
+        </p>
+        <button class="btn-retry" data-target="scraper">↻ Retry</button>
+      </div>
+    </div>
+
+    <!-- Knowledge Graph -->
+    <div class="app-frame" id="frame-kg" data-url="http://localhost:5174">
+      <iframe src="http://localhost:5174" title="Knowledge Graph Studio" id="iframe-kg"></iframe>
+      <div class="frame-offline">
+        <div class="offline-icon">⬡</div>
+        <div class="offline-title">Knowledge Graph Studio is offline</div>
+        <div class="offline-url">http://localhost:5174</div>
+        <p style="max-width:320px;color:var(--text-3);font-size:12px;">
+          Run <code style="background:var(--bg-3);padding:2px 6px;border-radius:4px;">npm run dev -w knowledge_graph_component</code> to start it.
+        </p>
+        <button class="btn-retry" data-target="kg">↻ Retry</button>
+      </div>
+    </div>
+
+  </div><!-- /#frame-area -->
+</div><!-- /#root-app -->
+
+<script type="module">
+  // ── Tab switching ──────────────────────────────────────────────────────
+  document.querySelectorAll('.root-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.frame;
+      document.querySelectorAll('.root-nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.app-frame').forEach(f => f.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('frame-' + id).classList.add('active');
+    });
+  });
+
+  // ── Retry buttons ──────────────────────────────────────────────────────
+  document.querySelectorAll('.btn-retry').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.target;
+      const frame  = document.getElementById('frame-' + target);
+      const iframe = document.getElementById('iframe-' + target);
+      frame.classList.remove('offline');
+      iframe.src = iframe.src; // reload iframe
+    });
+  });
+
+  // ── Service health checks ──────────────────────────────────────────────
+  const SERVICES = [
+    { id: 'scraper-svc', url: 'http://localhost:3737/health',   frameId: 'scraper' },
+    { id: 'kg-svc',      url: 'http://localhost:3738/health',   frameId: 'kg'      },
+  ];
+
+  const FRAMES = [
+    { id: 'scraper', url: 'http://localhost:5173' },
+    { id: 'kg',      url: 'http://localhost:5174' },
+  ];
+
+  async function checkService(svc) {
+    const pill = document.getElementById('pill-' + svc.id);
+    try {
+      const res = await fetch(svc.url, { signal: AbortSignal.timeout(3000) });
+      pill.classList.remove('checking', 'err');
+      pill.classList.add(res.ok ? 'ok' : 'err');
+    } catch {
+      pill.classList.remove('checking', 'ok');
+      pill.classList.add('err');
+    }
+  }
+
+  async function checkFrame(f) {
+    const frame = document.getElementById('frame-' + f.id);
+    try {
+      await fetch(f.url, { signal: AbortSignal.timeout(3000), mode: 'no-cors' });
+      frame.classList.remove('offline');
+    } catch {
+      frame.classList.add('offline');
+    }
+  }
+
+  function pollAll() {
+    SERVICES.forEach(checkService);
+    FRAMES.forEach(checkFrame);
+  }
+
+  pollAll();
+  setInterval(pollAll, 15_000);
+</script>
+</body>
+</html>

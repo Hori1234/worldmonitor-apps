@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Knowledge Graph Explorer</title>
+  <script type="module" crossorigin src="/assets/index-B8u09rZE.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-C__fwyXx.css">
+</head>
+<body>
+
+<!-- ══ App Shell ══════════════════════════════════════════════════════════════ -->
+
+<div id="kg-app">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header id="kg-header">
+    <div class="kgh-left">
+      <span class="kg-logo">⬡</span>
+      <span class="kg-title">Knowledge Graph Explorer</span>
+    </div>
+    <div class="kgh-center">
+      <!-- Graph selector -->
+      <select id="graph-select" class="graph-select">
+        <option value="">— select a graph —</option>
+      </select>
+      <button id="btn-new-graph"    class="btn btn-accent btn-sm">+ New</button>
+      <button id="btn-delete-graph" class="btn btn-danger btn-sm">Delete</button>
+      <button id="btn-recreate-graph" class="btn btn-warn btn-sm">Recreate</button>
+      <button id="btn-combine"      class="btn btn-ghost btn-sm">Combine…</button>
+    </div>
+    <div class="kgh-right">
+      <div id="kg-health-badge" class="kg-health-badge">
+        <span class="kg-health-dot"></span>
+        <span id="kg-health-text">Connecting…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Top navigation ──────────────────────────────────────────────────── -->
+  <nav id="kg-nav">
+    <button class="kg-nav-btn active" data-page="graph">Graph View</button>
+    <button class="kg-nav-btn"        data-page="nodes">⬡ Nodes</button>
+    <button class="kg-nav-btn"        data-page="explorer">API Explorer</button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       PAGE: Graph View
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <div id="page-graph" class="kg-page active">
+
+    <!-- Toolbar -->
+    <div id="kg-toolbar">
+
+      <!-- Search -->
+      <div id="search-wrap" class="toolbar-group search-group">
+        <input id="node-search" type="text" placeholder="Search nodes…" autocomplete="off" />
+        <div id="search-results" class="search-dropdown" hidden></div>
+      </div>
+
+      <!-- Layout -->
+      <div class="toolbar-group">
+        <label class="toolbar-label">Layout</label>
+        <select id="layout-select" class="toolbar-select">
+          <option value="forceAtlas2">Force Atlas 2</option>
+          <option value="forceAtlas2-live">FA2 Live</option>
+          <option value="circular">Circular</option>
+          <option value="random">Random</option>
+        </select>
+        <button id="btn-apply-layout" class="btn btn-ghost btn-sm">Apply</button>
+      </div>
+
+      <!-- Load limit -->
+      <div class="toolbar-group">
+        <label class="toolbar-label">Max nodes</label>
+        <select id="node-limit" class="toolbar-select">
+          <option value="200">200</option>
+          <option value="500" selected>500</option>
+          <option value="1000">1 000</option>
+          <option value="2000">2 000</option>
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="toolbar-group toolbar-actions">
+        <button id="btn-fit"    class="btn btn-ghost btn-sm">⌖ Fit</button>
+        <button id="btn-reload" class="btn btn-ghost btn-sm">↺ Reload</button>
+      </div>
+    </div><!-- /toolbar -->
+
+    <!-- Stats strip -->
+    <div id="kg-stats">
+      <span class="kgs">Nodes: <strong id="stat-total-nodes">0</strong></span>
+      <span class="kgs">Edges: <strong id="stat-total-edges">0</strong></span>
+      <span class="kgs">Visible: <strong id="stat-vis-nodes">0</strong> nodes / <strong id="stat-vis-edges">0</strong> edges</span>
+    </div>
+
+    <!-- Main canvas area -->
+    <div id="kg-main">
+
+      <!-- Left sidebar -->
+      <aside id="kg-sidebar">
+
+        <!-- Node types -->
+        <section class="sidebar-section">
+          <div class="sidebar-section-hdr">
+            <span>Node Types</span>
+            <button id="btn-reset-types" class="btn btn-xs btn-ghost">Reset</button>
+          </div>
+          <ul id="node-type-list" class="type-list"></ul>
+        </section>
+
+        <!-- Edge types -->
+        <section class="sidebar-section">
+          <div class="sidebar-section-hdr">
+            <span>Edge Types</span>
+          </div>
+          <ul id="edge-type-list" class="type-list"></ul>
+        </section>
+
+        <!-- Selected node -->
+        <section class="sidebar-section" id="node-panel" hidden>
+          <div class="sidebar-section-hdr">
+            <span>Selected Node</span>
+            <button id="btn-close-panel" class="btn btn-xs btn-ghost" onclick="document.getElementById('node-panel').hidden=true">✕</button>
+          </div>
+
+          <!-- Ego controls -->
+          <div class="ego-controls">
+            <label class="toolbar-label">Ego depth</label>
+            <input id="ego-depth" type="number" value="2" min="1" max="5" class="ego-depth-inp" />
+            <button id="btn-ego"       class="btn btn-accent btn-xs">Ego Network</button>
+            <button id="btn-clear-ego" class="btn btn-ghost btn-xs" hidden>✕ Reset</button>
+          </div>
+
+          <!-- Dynamic metadata -->
+          <div id="node-panel-body"></div>
+
+          <!-- Danger zone -->
+          <div class="node-danger">
+            <button id="btn-delete-node" class="btn btn-danger btn-xs">🗑 Delete Node</button>
+          </div>
+        </section>
+
+      </aside><!-- /sidebar -->
+
+      <!-- Sigma canvas -->
+      <div id="sigma-wrap">
+        <div id="sigma-container"></div>
+        <!-- Overlays -->
+        <div id="graph-loading" class="canvas-overlay" hidden>
+          <div class="spinner"></div>
+          <span>Loading graph…</span>
+        </div>
+        <div id="graph-empty" class="canvas-overlay">
+          <span>Select a graph above to visualise it, or create a new one.</span>
+        </div>
+      </div>
+
+    </div><!-- /kg-main -->
+  </div><!-- /page-graph -->
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       PAGE: Nodes Browser
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <div id="page-nodes" class="kg-page">
+
+    <!-- Toolbar -->
+    <div id="nt-toolbar">
+      <div class="nt-toolbar-left">
+        <input id="nt-search" type="search" placeholder="Filter nodes…" autocomplete="off" />
+        <span id="nt-node-count" class="nt-count-badge">— nodes</span>
+      </div>
+      <div class="nt-toolbar-right">
+        <button id="nt-refresh-btn" class="btn btn-ghost btn-sm">↺ Refresh</button>
+        <button id="nt-rebuild-btn" class="btn btn-warn btn-sm">↺ Rebuild Graph</button>
+      </div>
+    </div>
+
+    <!-- Selection bar (hidden until nodes are checked) -->
+    <div id="nt-selection-bar" class="nt-selection-bar" hidden>
+      <span id="nt-selection-count" class="nt-sel-count">0 nodes selected</span>
+      <div class="nt-sel-actions">
+        <button id="nt-clear-sel-btn" class="btn btn-ghost btn-xs">Clear</button>
+        <button id="nt-delete-btn"    class="btn btn-danger btn-xs">🗑 Delete Selected</button>
+      </div>
+    </div>
+
+    <!-- Status line -->
+    <div id="nt-status" class="nt-status"></div>
+
+    <!-- Main split -->
+    <div class="nt-body">
+
+      <!-- Left: tree -->
+      <div class="nt-tree-col">
+        <div id="nt-tree" class="nt-tree">
+          <div class="nt-empty">Select a graph above to browse its nodes.</div>
+        </div>
+      </div>
+
+      <!-- Right: detail panel -->
+      <div id="nt-detail-panel" class="nt-detail-panel" hidden>
+        <div class="nt-detail-hdr">
+          <span class="nt-detail-hdr-title">Node Details</span>
+          <button id="nt-detail-close" class="btn btn-ghost btn-xs">✕</button>
+        </div>
+        <div id="nt-detail-body" class="nt-detail-body"></div>
+      </div>
+
+    </div><!-- /.nt-body -->
+  </div><!-- /#page-nodes -->
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       PAGE: API Explorer
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <div id="page-explorer" class="kg-page">
+    <div class="ex-layout">
+
+      <!-- Sidebar: endpoint list -->
+      <div class="ex-sidebar">
+        <div class="ex-sidebar-search">
+          <input id="ex-search" type="text" placeholder="Filter endpoints…" autocomplete="off" />
+        </div>
+        <div id="ex-sidebar" class="ex-endpoint-list"></div>
+      </div>
+
+      <!-- Main panel -->
+      <div class="ex-main">
+
+        <!-- Request section -->
+        <div class="ex-request-section">
+          <div class="ex-url-row">
+            <span id="ex-method-badge" class="ex-method-badge get">GET</span>
+            <input id="ex-url" type="text" class="ex-url-input" value="/api/kg/health" spellcheck="false" />
+            <button id="ex-send" class="btn btn-accent">Send</button>
+          </div>
+
+          <p id="ex-desc" class="ex-desc">Select an endpoint from the sidebar.</p>
+
+          <!-- Sub-tabs: Params / Body -->
+          <div class="ex-req-tabs">
+            <button class="ex-req-tab-btn active" data-tab="params">Params</button>
+            <button class="ex-req-tab-btn"        data-tab="body">Body</button>
+          </div>
+          <div id="ex-tab-params" class="ex-req-tab-pane active">
+            <div id="ex-params-tab"></div>
+          </div>
+          <div id="ex-tab-body" class="ex-req-tab-pane">
+            <textarea id="ex-body" class="ex-body-area" placeholder="JSON request body…" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="ex-divider"></div>
+
+        <!-- Response section -->
+        <div class="ex-response-section">
+          <div class="ex-resp-header">
+            <span>Response</span>
+            <span id="ex-resp-status" class="ex-status-badge"></span>
+            <span id="ex-resp-time" class="ex-resp-time"></span>
+            <button class="btn btn-xs btn-ghost" id="ex-copy-resp" title="Copy response">⎘</button>
+          </div>
+          <pre id="ex-resp-body" class="ex-resp-body">Hit Send to see the response.</pre>
+        </div>
+
+      </div><!-- /ex-main -->
+    </div><!-- /ex-layout -->
+  </div><!-- /page-explorer -->
+
+</div><!-- /kg-app -->
+
+<!-- ══ Modals ═══════════════════════════════════════════════════════════════ -->
+
+<!-- Create graph modal -->
+<div id="modal-graph" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modal-graph-title">Create Graph</h2>
+      <button id="modal-graph-close" class="modal-close">✕</button>
+    </div>
+    <form id="modal-graph-form" class="modal-form">
+      <label class="form-label">Graph name *</label>
+      <input id="modal-graph-name" type="text" class="form-input" placeholder="e.g. knowledge-base" required />
+
+      <label class="form-label">Dense vector dimension (optional)</label>
+      <input id="modal-graph-dim" type="number" class="form-input" placeholder="e.g. 384 for text embeddings" min="1" />
+      <p class="form-hint">Only needed if you want to store/search embeddings on nodes.</p>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('modal-graph').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-accent">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Combine graphs modal -->
+<div id="modal-combine" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Combine Graphs</h2>
+      <button id="modal-combine-close" class="modal-close">✕</button>
+    </div>
+    <form id="modal-combine-form" class="modal-form">
+      <label class="form-label">Source graphs (comma or newline separated) *</label>
+      <textarea id="combine-sources" class="form-input form-textarea" placeholder="graph-a&#10;graph-b" required></textarea>
+
+      <label class="form-label">Target graph name *</label>
+      <input id="combine-target" type="text" class="form-input" placeholder="combined-graph" required />
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('modal-combine').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-accent">Combine</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

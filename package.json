@@ -1,0 +1,20 @@
+{
+  "name": "test-web-scraper-to-md",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "html_scraper_service",
+    "html_scraper_component",
+    "knowledge_graph_service",
+    "knowledge_graph_component"
+  ],
+  "scripts": {
+    "dev": "concurrently --names \"SCRAPER-UI,KG-UI,ROOT\" --prefix-colors \"cyan,magenta,blue\" \"npm run dev -w html_scraper_component\" \"npm run dev -w knowledge_graph_component\" \"vite --port 5172\"",
+    "dev:all": "concurrently --names \"SCRAPER-SVC,KG-SVC,SCRAPER-UI,KG-UI,ROOT\" --prefix-colors \"yellow,green,cyan,magenta,blue\" \"npm run dev -w html_scraper_service\" \"npm run dev -w knowledge_graph_service\" \"npm run dev -w html_scraper_component\" \"npm run dev -w knowledge_graph_component\" \"vite --port 5172\"",
+    "dev:services": "concurrently --names \"SCRAPER-SVC,KG-SVC\" --prefix-colors \"yellow,green\" \"npm run dev -w html_scraper_service\" \"npm run dev -w knowledge_graph_service\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "vite": "^6.0.7"
+  }
+}

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scraper Dashboard</title>
+    <script type="module" crossorigin src="/assets/index-Cx3WfMya.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BcAlTC3W.css">
+  </head>
+  <body>
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <header id="app-header">
+      <div class="header-left">
+        <span class="logo">🕷</span>
+        <span class="app-title">Scraper Dashboard</span>
+      </div>
+      <div class="header-right">
+        <div class="api-url-row">
+          <span class="api-label">API</span>
+          <input
+            type="text"
+            id="api-base-url"
+            value="http://localhost:3737"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <div id="health-badge" class="health-badge unknown">
+          <span class="health-dot"></span>
+          <span id="health-text">Connecting…</span>
+        </div>
+        <button id="settings-tab-btn" class="btn btn-ghost btn-sm" title="Settings">⚙</button>
+        <button id="notif-bell" class="notif-bell" title="Notifications">
+          🔔
+          <span id="notif-badge" class="notif-badge" hidden>0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Stats bar ──────────────────────────────────────── -->
+    <div id="stats-bar">
+      <span class="stat"><strong id="stat-files">—</strong> files</span>
+      <span class="stat"><strong id="stat-categories">—</strong> categories</span>
+      <span class="stat"><strong id="stat-jobs-today">—</strong> jobs today</span>
+    </div>
+
+    <!-- ── Top-level app navigation ─────────────────────── -->
+    <nav id="app-nav">
+      <button class="app-nav-btn active" data-page="dashboard">Dashboard</button>
+      <button class="app-nav-btn" data-page="explorer">API Explorer</button>
+      <button class="app-nav-btn" data-page="kg">⬡ Knowledge Graph</button>
+    </nav>
+
+    <!-- ── Page: Dashboard ───────────────────────────────── -->
+    <div id="page-dashboard" class="app-page active">
+    <main>
+
+      <div class="col-left">
+
+      <!-- ── Jobs Monitor ───────────────────────────────────── -->
+      <section class="panel" id="monitor-panel">
+        <div class="panel-header">
+          <span class="panel-title">Jobs Monitor</span>
+          <div class="panel-actions">
+            <span id="jobs-count" class="count-badge">0 jobs</span>
+            <button id="clear-done-btn" class="btn btn-ghost btn-sm">
+              Clear Finished
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Job ID</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Created</th>
+                <th>Updated</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="jobs-tbody">
+              <tr class="empty-row">
+                <td colspan="6">No jobs yet — submit one below ↓</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Command Center ─────────────────────────────────── -->
+      <section class="panel" id="command-panel">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="builder">Builder</button>
+          <button class="tab-btn" data-tab="raw">Raw JSON</button>
+          <button class="tab-btn" data-tab="preview">cURL / PS Preview</button>
+        </div>
+
+        <!-- Builder tab -->
+        <div class="tab-pane active" id="tab-builder">
+          <div id="url-rows"></div>
+          <div class="row-actions">
+            <button class="btn btn-ghost btn-sm" id="add-row-btn">+ Add URL</button>
+          </div>
+          <div class="code-block">
+            <div class="code-block-hdr">
+              <span>Payload Preview</span>
+              <button class="btn btn-ghost btn-xs copy-btn" data-for="builder-code">
+                Copy
+              </button>
+            </div>
+            <pre><code id="builder-code" class="hljs language-json"></code></pre>
+          </div>
+          <button class="btn btn-primary" id="builder-run-btn">▶ Run Scrape</button>
+        </div>
+
+        <!-- Raw JSON tab -->
+        <div class="tab-pane" id="tab-raw">
+          <div class="raw-editor-wrap">
+            <textarea
+              id="raw-input"
+              placeholder='{"jobs":[{"url":"https://example.com/article","category":"Technology"}]}'
+            ></textarea>
+            <div class="raw-toolbar">
+              <button class="btn btn-ghost btn-sm" id="fmt-btn">Format JSON</button>
+              <button class="btn btn-ghost btn-sm" id="clr-btn">Clear</button>
+            </div>
+          </div>
+          <div class="code-block">
+            <div class="code-block-hdr">
+              <span>Formatted</span>
+              <button class="btn btn-ghost btn-xs copy-btn" data-for="raw-code">Copy</button>
+            </div>
+            <pre><code id="raw-code" class="hljs language-json"></code></pre>
+          </div>
+          <button class="btn btn-primary" id="raw-run-btn">▶ Run Scrape</button>
+        </div>
+
+        <!-- cURL / PS Preview tab -->
+        <div class="tab-pane" id="tab-preview">
+          <div class="code-block">
+            <div class="code-block-hdr">
+              <span>cURL</span>
+              <button class="btn btn-ghost btn-xs copy-btn" data-for="curl-code">Copy</button>
+            </div>
+            <pre><code id="curl-code" class="hljs language-bash">Build a request in the Builder or Raw JSON tab first.</code></pre>
+          </div>
+          <div class="code-block">
+            <div class="code-block-hdr">
+              <span>PowerShell — Invoke-RestMethod</span>
+              <button class="btn btn-ghost btn-xs copy-btn" data-for="ps-code">Copy</button>
+            </div>
+            <pre><code id="ps-code" class="hljs language-powershell"></code></pre>
+          </div>
+        </div>
+      </section>
+
+      </div><!-- /.col-left -->
+
+      <!-- ── Markdown File Browser ──────────────────────────── -->
+      <div class="col-right">
+        <section class="panel" id="browser-panel">
+          <div class="panel-header">
+            <span class="panel-title">Markdown Files</span>
+            <div class="panel-actions">
+              <span id="file-count" class="count-badge">—</span>
+              <button id="refresh-tree-btn" class="btn btn-ghost btn-sm">⟳ Refresh</button>
+              <button id="btn-import-dir-to-kg" class="btn btn-accent btn-sm" title="Import entire directory structure to Knowledge Graph">⬁ Import to KG</button>
+            </div>
+          </div>
+
+          <!-- File tree + Preview side-by-side -->
+          <div class="browser-body">
+            <div class="tree-sidebar">
+              <div class="tree-controls">
+                <input type="search" id="tree-search" placeholder="Filter files…" />
+                <select id="tree-sort" title="Sort by">
+                  <option value="name">Name</option>
+                  <option value="date">Date</option>
+                  <option value="size">Size</option>
+                </select>
+              </div>
+
+              <!-- Selection bar (hidden until files are checked) -->
+              <div id="selection-bar" class="selection-bar" hidden>
+                <span id="selection-count" class="sel-count">0 files selected</span>
+                <div class="sel-actions">
+                  <button id="selection-clear" class="btn btn-ghost btn-xs">Clear</button>
+                  <button id="btn-send-to-kg" class="btn btn-primary btn-xs">⧁ Send to KG</button>
+                </div>
+              </div>
+
+              <div id="file-tree"></div>
+            </div>
+            <div id="tree-resizer"></div>
+            <div id="preview-pane">
+              <div id="preview-header">
+                <span id="preview-filename">Select a file to preview</span>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <button class="btn btn-ghost btn-xs" id="preview-raw-toggle">Raw</button>
+                  <button class="btn btn-ghost btn-xs copy-btn" data-for="preview-raw-text">Copy</button>
+                  <button class="btn btn-ghost btn-xs" id="preview-delete-btn" title="Delete file">🗑</button>
+                  <button class="btn btn-ghost btn-xs" id="preview-export-btn" title="Export category as zip">⬇ Zip</button>
+                </div>
+              </div>
+              <div id="preview-meta-strip" hidden></div>
+              <pre id="preview-raw-text" style="display:none"></pre>
+              <div id="preview-rendered" class="markdown-body">
+                <p class="preview-placeholder">Select a file from the tree to preview it here.</p>
+              </div>
+            </div>
+          </div><!-- /.browser-body -->
+        </section>
+      </div><!-- /.col-right -->
+
+    </main>
+    </div><!-- /#page-dashboard -->
+
+    <!-- ── Page: API Explorer ────────────────────────────── -->
+    <div id="page-explorer" class="app-page">
+      <div class="ex-layout">
+
+        <!-- Sidebar -->
+        <div class="ex-sidebar">
+          <div class="ex-sidebar-search">
+            <input id="ex-search" type="search" placeholder="Search endpoints…" />
+          </div>
+          <div id="ex-sidebar-list" class="ex-sidebar-list"></div>
+        </div>
+
+        <!-- Main area -->
+        <div class="ex-main">
+
+          <!-- Request -->
+          <div class="ex-section ex-request-section">
+            <div class="ex-section-label">REQUEST</div>
+            <div id="ex-request-panel"></div>
+          </div>
+
+          <!-- Response -->
+          <div class="ex-section ex-response-section">
+            <div class="ex-section-label">RESPONSE</div>
+            <div id="ex-response-panel">
+              <p class="ex-res-placeholder">Send a request to see the response here.</p>
+            </div>
+          </div>
+
+        </div><!-- /.ex-main -->
+      </div><!-- /.ex-layout -->
+    </div><!-- /#page-explorer -->
+
+    <!-- ── Page: Knowledge Graph ─────────────────────── -->
+    <div id="page-kg" class="app-page">
+      <iframe
+        id="kg-frame"
+        src="http://localhost:5174"
+        style="width:100%;height:100%;border:none;display:block;"
+        title="Knowledge Graph Explorer"
+        allow="clipboard-write"
+      ></iframe>
+    </div><!-- /#page-kg -->
+
+    <!-- ── KG Send Modal ───────────────────────────── -->
+    <div id="modal-kg-send" class="kg-modal">
+      <div class="kg-modal-box">
+        <div class="kg-modal-header">
+          <span class="kg-modal-title">⧁ Send to Knowledge Graph</span>
+          <button id="kg-send-close" class="btn btn-ghost btn-xs" title="Close">✕</button>
+        </div>
+        <div class="kg-modal-body">
+          <p class="kg-modal-desc">Sending <strong id="kg-send-count">0 files</strong> as graph nodes.</p>
+
+          <div class="kg-form-row">
+            <label class="kg-form-label" for="kg-graph-select">Target graph</label>
+            <select id="kg-graph-select" class="kg-form-select"></select>
+          </div>
+
+          <div id="kg-new-name-row" class="kg-form-row" hidden>
+            <label class="kg-form-label" for="kg-new-graph-name">New graph name</label>
+            <input id="kg-new-graph-name" class="kg-form-input" type="text"
+              placeholder="e.g. research-ai" autocomplete="off" />
+          </div>
+
+          <div class="kg-options-row">
+            <div class="kg-opt">
+              <label class="kg-form-label" for="kg-node-type-id">Node type ID</label>
+              <input id="kg-node-type-id" class="kg-form-input kg-form-input-sm"
+                type="number" value="1" min="0" />
+            </div>
+            <div class="kg-opt">
+              <label class="kg-form-label kg-check-label">
+                <input id="kg-incl-content" type="checkbox" checked />
+                Include file content
+              </label>
+            </div>
+          </div>
+
+          <!-- Dynamic type hint -->
+          <div id="kg-type-hint" class="kg-type-hint" hidden></div>
+
+          <!-- Node type legend -->
+          <details class="kg-legend">
+            <summary class="kg-legend-toggle">What do the node types mean?</summary>
+            <div class="kg-legend-grid">
+              <div class="kg-legend-row"><span class="kg-legend-id">1</span><span class="kg-legend-icon">📄</span><span class="kg-legend-name">Document</span><span class="kg-legend-desc">A primary content node — article, report, scraped page, or any standalone text file.</span></div>
+              <div class="kg-legend-row"><span class="kg-legend-id">2</span><span class="kg-legend-icon">🏷</span><span class="kg-legend-name">Entity</span><span class="kg-legend-desc">A named real-world thing extracted from content: person, organisation, product, or place.</span></div>
+              <div class="kg-legend-row"><span class="kg-legend-id">3</span><span class="kg-legend-icon">💡</span><span class="kg-legend-name">Concept</span><span class="kg-legend-desc">An abstract idea, topic, or theme that spans multiple documents.</span></div>
+              <div class="kg-legend-row"><span class="kg-legend-id">4</span><span class="kg-legend-icon">🗂</span><span class="kg-legend-name">Category</span><span class="kg-legend-desc">A classification bucket or folder grouping that contains other nodes.</span></div>
+              <div class="kg-legend-row"><span class="kg-legend-id">5</span><span class="kg-legend-icon">🔗</span><span class="kg-legend-name">Reference</span><span class="kg-legend-desc">An external link or citation pointing to a source outside the graph.</span></div>
+            </div>
+          </details>
+
+          <div id="kg-send-status" class="kg-send-status"></div>
+        </div>
+        <div class="kg-modal-footer">
+          <button id="kg-send-cancel" class="btn btn-ghost">Cancel</button>
+          <button id="kg-send-btn" class="btn btn-primary">⧁ Send Files</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Import Directory → KG modal ──────────────────── -->
+    <div id="modal-kg-dir" class="kg-modal">
+      <div class="kg-modal-box">
+        <div class="kg-modal-header">
+          <span>⬁ Import Directory Structure → Knowledge Graph</span>
+          <button id="kg-dir-close-x" class="kg-modal-close">✕</button>
+        </div>
+        <div class="kg-modal-body">
+
+          <!-- Graph select -->
+          <div class="kg-form-row">
+            <label class="kg-form-label" for="kg-dir-graph-select">Target graph</label>
+            <select id="kg-dir-graph-select" class="kg-form-select">
+              <option value="">Loading…</option>
+            </select>
+          </div>
+          <div id="kg-dir-new-name-row" class="kg-form-row" hidden>
+            <label class="kg-form-label" for="kg-dir-new-graph-name">New graph name</label>
+            <input id="kg-dir-new-graph-name" type="text" class="kg-form-input"
+                   placeholder="e.g. my-news-kg" autocomplete="off" />
+          </div>
+
+          <!-- Preview -->
+          <div class="kg-form-row" style="flex-direction:column;gap:6px">
+            <label class="kg-form-label">What will be imported</label>
+            <div id="kg-dir-preview" class="kg-type-hint" style="display:block">Loading…</div>
+          </div>
+
+          <!-- How it works -->
+          <details class="kg-legend">
+            <summary class="kg-legend-summary">How the mapping works</summary>
+            <div class="kg-legend-body" style="font-size:11px;line-height:1.6;padding:8px 10px;color:var(--text-lo)">
+              <p>Each <strong>folder</strong> becomes a <span class="kg-type-badge">🗂 Category</span> node (type 4).<br>
+              Each <strong>.md file</strong> inside that folder becomes a <span class="kg-type-badge">📄 Document</span> node (type 1).<br>
+              A <strong>CONTAINS</strong> edge (typeId&nbsp;1) is created from the Category → each of its Documents.<br>
+              Nested sub-folders are resolved to the nearest top-level category.</p>
+            </div>
+          </details>
+
+          <div id="kg-dir-status" class="kg-send-status"></div>
+        </div>
+        <div class="kg-modal-footer">
+          <button id="kg-dir-cancel" class="btn btn-ghost">Cancel</button>
+          <button id="kg-dir-import-btn" class="btn btn-primary">⬁ Import Directory</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast container (injected by toast.js) -->
+    <div id="toasts"></div>
+
+    <!-- ── Notification drawer ───────────────────────────── -->
+    <div id="notif-drawer">
+      <div class="drawer-backdrop"></div>
+      <div class="drawer-panel">
+        <div class="drawer-header">
+          <span>Notifications</span>
+          <div style="display:flex;gap:6px">
+            <button id="notif-mark-read" class="btn btn-ghost btn-xs">Mark all read</button>
+            <button id="notif-clear"     class="btn btn-ghost btn-xs">Clear all</button>
+            <button class="btn btn-ghost btn-xs drawer-close-btn">✕</button>
+          </div>
+        </div>
+        <div id="notif-list" class="notif-list"></div>
+      </div>
+    </div>
+
+    <!-- ── Settings modal ────────────────────────────────── -->
+    <div id="settings-modal">
+      <div id="settings-overlay"></div>
+      <div class="settings-dialog">
+        <div class="settings-dialog-header">
+          <span>Settings</span>
+          <button id="settings-close-btn" class="btn btn-ghost btn-xs">✕</button>
+        </div>
+        <form id="settings-form" autocomplete="off">
+          <fieldset class="settings-section">
+            <legend>Server</legend>
+            <label>Port <input type="number" name="PORT" min="1" max="65535" /></label>
+            <label>CORS Origin <input type="text" name="CORS_ORIGIN" /></label>
+          </fieldset>
+          <fieldset class="settings-section">
+            <legend>Output</legend>
+            <label>Output Directory <input type="text" name="OUTPUT_DIR" /></label>
+          </fieldset>
+          <fieldset class="settings-section">
+            <legend>Scraping</legend>
+            <label>
+              Max Concurrency
+              <input type="range" name="MAX_CONCURRENCY" min="1" max="10" step="1" />
+            </label>
+            <label>Browser Timeout (ms) <input type="number" name="BROWSER_TIMEOUT" min="5000" /></label>
+            <label>Max Retries <input type="number" name="MAX_RETRIES" min="0" max="10" /></label>
+            <label>Log Level
+              <select name="LOG_LEVEL">
+                <option value="debug">debug</option>
+                <option value="info">info</option>
+                <option value="warn">warn</option>
+                <option value="error">error</option>
+              </select>
+            </label>
+          </fieldset>
+          <fieldset class="settings-section">
+            <legend>API Keys</legend>
+            <label>
+              Firecrawl API Key
+              <div class="api-key-row">
+                <input type="password" name="FIRECRAWL_API_KEY" autocomplete="new-password" />
+                <button type="button" id="test-firecrawl-btn" class="btn btn-ghost btn-xs">Test Key</button>
+              </div>
+            </label>
+          </fieldset>
+          <fieldset class="settings-section">
+            <legend>Proxy</legend>
+            <label>Proxy URL <input type="text" name="PROXY_URL" placeholder="http://proxy:8080" /></label>
+          </fieldset>
+        </form>
+        <div class="settings-dialog-footer">
+          <button id="settings-reset-btn"  class="btn btn-ghost btn-sm">↺ Reload</button>
+          <button id="settings-save-btn"   class="btn btn-primary btn-sm">Save</button>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
