@@ -443,11 +443,30 @@ tbody td { padding: 10px 16px; font-size: 13px; color: var(--text-2); }
 
 /* ── Stats bar ───────────────────────────────────────────────────────────── */
 #stats-bar {
-  display: flex; gap: 24px; align-items: center;
+  display: flex; align-items: center; justify-content: space-between;
   padding: 6px 20px; background: var(--bg-3); border-bottom: 1px solid var(--border);
   font-size: 12px; color: var(--text-2);
 }
+.stats-bar-left { display: flex; gap: 24px; align-items: center; }
 #stats-bar .stat strong { color: var(--text); font-weight: 600; }
+
+/* ── Service status pills ────────────────────────────────────────────────── */
+.svc-pills { display: flex; align-items: center; gap: 6px; }
+.svc-pill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px;
+  background: var(--bg-2); border: 1px solid var(--border);
+  color: var(--text-2); cursor: pointer; text-decoration: none;
+  transition: border-color .15s;
+}
+.svc-pill:hover { border-color: var(--accent); color: var(--text); }
+.svc-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+.svc-pill.ok  .dot { background: var(--ok,  #3fb950); }
+.svc-pill.ok  { border-color: rgba(63,185,80,.3); }
+.svc-pill.err .dot { background: var(--err, #f85149); }
+.svc-pill.err { border-color: rgba(248,81,73,.3); }
+.svc-pill.checking .dot { background: var(--warn, #d29922); animation: svc-pulse .8s infinite; }
+@keyframes svc-pulse { 0%,100% { opacity:1; } 50% { opacity:.3; } }
 
 /* ── Notification bell ───────────────────────────────────────────────────── */
 .notif-bell {

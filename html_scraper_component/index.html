@@ -13,6 +13,7 @@
         <span class="logo">🕷</span>
         <span class="app-title">Knowledge Dashboard</span>
       </div>
+      
       <div class="header-right">
         <a class="btn btn-ghost btn-sm header-ext-link" href="http://localhost:5175" target="_blank" rel="noopener" title="Open API Explorer">⚡ API Explorer ↗</a>
         <a class="btn btn-ghost btn-sm header-ext-link" href="http://localhost:5176" target="_blank" rel="noopener" title="Open Notification Center">🔔 Notification Center ↗</a>
@@ -41,9 +42,25 @@
 
     <!-- ── Stats bar ──────────────────────────────────────── -->
     <div id="stats-bar">
-      <span class="stat"><strong id="stat-files">—</strong> files</span>
-      <span class="stat"><strong id="stat-categories">—</strong> categories</span>
-      <span class="stat"><strong id="stat-jobs-today">—</strong> jobs today</span>
+      <div class="stats-bar-left">
+        <span class="stat"><strong id="stat-files">—</strong> files</span>
+        <span class="stat"><strong id="stat-categories">—</strong> categories</span>
+        <span class="stat"><strong id="stat-jobs-today">—</strong> jobs today</span>
+      </div>
+      <div class="svc-pills">
+        <a class="svc-pill checking" id="pill-scraper-svc" href="http://localhost:3737" target="_blank" title="Scraper service API">
+          <span class="dot"></span>
+          <span>Scraper API :3737</span>
+        </a>
+        <a class="svc-pill checking" id="pill-kg-svc" href="http://localhost:3738" target="_blank" title="Knowledge Graph service API">
+          <span class="dot"></span>
+          <span>KG API :3738</span>
+        </a>
+        <a class="svc-pill checking" id="pill-nc-svc" href="http://localhost:3003" target="_blank" title="Notification Center service API">
+          <span class="dot"></span>
+          <span>NC API :3003</span>
+        </a>
+      </div>
     </div>
 
     <!-- ── Top-level app navigation ─────────────────────── -->

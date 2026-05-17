@@ -2,7 +2,7 @@
 url: "https://nos.nl/artikel/2614705-zelensky-noemt-zeer-zware-drone-aanval-op-rusland-gerechtvaardigde-reactie"
 title: "Zelensky noemt zeer zware drone-aanval op Rusland gerechtvaardigde reactie"
 category: "News"
-scraped_at: "2026-05-17T22:10:45.210Z"
+scraped_at: "2026-05-17T22:19:44.058Z"
 method: "playwright"
 word_count: 480
 ---
