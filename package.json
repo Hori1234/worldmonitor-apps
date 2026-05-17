@@ -7,15 +7,23 @@
     "html_scraper_component",
     "knowledge_graph_service",
     "knowledge_graph_component",
-    "api_explorer_component"
+    "api_explorer_component",
+    "notification_center_service",
+    "notification_center_component"
   ],
   "scripts": {
-    "dev": "concurrently --names \"SCRAPER-UI,KG-UI,API-EX,ROOT\" --prefix-colors \"cyan,magenta,yellow,blue\" \"npm run dev -w html_scraper_component\" \"npm run dev -w knowledge_graph_component\" \"npm run dev -w api_explorer_component\" \"vite --port 5172\"",
-    "dev:all": "concurrently --names \"SCRAPER-SVC,KG-SVC,SCRAPER-UI,KG-UI,API-EX,ROOT\" --prefix-colors \"yellow,green,cyan,magenta,white,blue\" \"npm run dev -w html_scraper_service\" \"npm run dev -w knowledge_graph_service\" \"npm run dev -w html_scraper_component\" \"npm run dev -w knowledge_graph_component\" \"npm run dev -w api_explorer_component\" \"vite --port 5172\"",
-    "dev:services": "concurrently --names \"SCRAPER-SVC,KG-SVC\" --prefix-colors \"yellow,green\" \"npm run dev -w html_scraper_service\" \"npm run dev -w knowledge_graph_service\""
+    "dev": "concurrently --names \"SCRAPER-UI,KG-UI,API-EX,NC-UI,ROOT\" --prefix-colors \"cyan,magenta,yellow,green,blue\" \"npm run dev -w html_scraper_component\" \"npm run dev -w knowledge_graph_component\" \"npm run dev -w api_explorer_component\" \"npm run dev -w notification_center_component\" \"vite --port 5172\"",
+    "dev:all": "concurrently --names \"SCRAPER-SVC,KG-SVC,NC-SVC,SCRAPER-UI,KG-UI,API-EX,NC-UI,ROOT\" --prefix-colors \"yellow,green,green,cyan,magenta,white,green,blue\" \"npm run dev -w html_scraper_service\" \"npm run dev -w knowledge_graph_service\" \"npm run dev -w notification_center_service\" \"npm run dev -w html_scraper_component\" \"npm run dev -w knowledge_graph_component\" \"npm run dev -w api_explorer_component\" \"npm run dev -w notification_center_component\" \"vite --port 5172\"",
+    "dev:services": "concurrently --names \"SCRAPER-SVC,KG-SVC,NC-SVC\" --prefix-colors \"yellow,green,cyan\" \"npm run dev -w html_scraper_service\" \"npm run dev -w knowledge_graph_service\" \"npm run dev -w notification_center_service\"",
+    "start": "concurrently --names \"SCRAPER-UI,KG-UI,API-EX,NC-UI,ROOT\" --prefix-colors \"cyan,magenta,yellow,green,blue\" \"npm run dev -w html_scraper_component\" \"npm run dev -w knowledge_graph_component\" \"npm run dev -w api_explorer_component\" \"npm run dev -w notification_center_component\" \"vite --port 5172\"",
+    "start:all": "concurrently --names \"SCRAPER-SVC,KG-SVC,NC-SVC,SCRAPER-UI,KG-UI,API-EX,NC-UI,ROOT\" --prefix-colors \"yellow,green,green,cyan,magenta,white,green,blue\" \"npm run start -w html_scraper_service\" \"npm run start -w knowledge_graph_service\" \"npm run start -w notification_center_service\" \"npm run dev -w html_scraper_component\" \"npm run dev -w knowledge_graph_component\" \"npm run dev -w api_explorer_component\" \"npm run dev -w notification_center_component\" \"vite --port 5172\"",
+    "start:services": "concurrently --names \"SCRAPER-SVC,KG-SVC,NC-SVC\" --prefix-colors \"yellow,green,cyan\" \"npm run start -w html_scraper_service\" \"npm run start -w knowledge_graph_service\" \"npm run start -w notification_center_service\""
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
     "vite": "^6.0.7"
+  },
+  "dependencies": {
+    "nodemailer": "^8.0.7"
   }
 }

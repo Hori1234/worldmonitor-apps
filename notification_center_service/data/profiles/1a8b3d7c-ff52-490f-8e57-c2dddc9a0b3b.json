@@ -1,0 +1,96 @@
+{
+  "id": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b",
+  "name": "Intel Notification",
+  "description": "",
+  "createdAt": "2026-05-17T17:00:39.630Z",
+  "updatedAt": "2026-05-17T17:33:35.727Z",
+  "canvas": {
+    "nodes": [
+      {
+        "id": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+        "kind": "market",
+        "x": 835,
+        "y": 238,
+        "w": 415,
+        "h": 231,
+        "data": {
+          "inputs": 1,
+          "outputs": 1,
+          "ticker": "INITC",
+          "exchange": "NASDAQ",
+          "price": 123,
+          "priceChangePct": 23,
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "",
+          "icmType": "",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "Intel Stock",
+          "message": ""
+        }
+      },
+      {
+        "id": "c695fd6a-1be8-4680-b517-7fa4545f7e37",
+        "kind": "news",
+        "x": 280,
+        "y": 210,
+        "w": 314,
+        "h": 183,
+        "data": {
+          "inputs": 1,
+          "outputs": 1,
+          "ticker": "",
+          "exchange": "",
+          "category": "Texh",
+          "source": "google.com",
+          "url": "google.com",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "",
+          "icmType": "",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "intel is coming back",
+          "message": ""
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "ef46ae83-34c1-40cd-834d-42eb63d90bc8",
+        "fromNodeId": "c695fd6a-1be8-4680-b517-7fa4545f7e37",
+        "fromPortIdx": 0,
+        "toNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+        "toPortIdx": 0,
+        "meta": {
+          "label": "Stock Update",
+          "icmType": "icm:market-node",
+          "priority": 1,
+          "action": "webhook",
+          "actionTarget": "Ticker",
+          "notes": "Intel stock has changes"
+        }
+      }
+    ],
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    },
+    "profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
+  }
+}

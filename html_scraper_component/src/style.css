@@ -623,6 +623,7 @@ a.app-nav-btn {
 .app-page        { display: none; }
 .app-page.active { display: block; }
 #page-kg         { height: calc(100vh - var(--chrome-h, 110px)); overflow: hidden; }
+#page-nc         { height: calc(100vh - var(--chrome-h, 110px)); overflow: hidden; }
 
 /* ── API Explorer (scraper version) ─────────────────────────────────────── */
 .ex-layout {

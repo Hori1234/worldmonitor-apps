@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notification Center</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='20' font-size='18'>🔔</text></svg>" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Header -->
+  <header id="app-header">
+    <div class="header-left">
+      <span class="app-logo">🔔</span>
+      <span class="app-title">Notification Center</span>
+    </div>
+
+    <div class="header-center">
+      <nav class="nav-tabs">
+        <button class="nav-btn active" data-tab="canvas">Canvas Builder</button>
+        <button class="nav-btn" data-tab="objects">⚡ Browser Triggers</button>
+        <button class="nav-btn" data-tab="rules">Edge Rules</button>
+      </nav>
+    </div>
+
+    <div class="header-right">
+      <div class="profile-selector-wrapper">
+        <select id="profile-select" title="Active profile"></select>
+        <button id="profile-new-btn"    title="New profile">+</button>
+        <button id="profile-rename-btn" title="Rename profile">✏</button>
+        <button id="profile-delete-btn" title="Delete profile" class="danger">✕</button>
+      </div>
+
+      <div class="notif-bell-wrapper">
+        <button id="notif-bell" title="Notifications" class="icon-btn">🔔</button>
+        <span   id="notif-badge" class="badge" hidden>0</span>
+      </div>
+
+      <div id="health-indicator" class="health-dot offline" title="Service offline"></div>
+    </div>
+  </header>
+
+  <!-- ══ TAB: Canvas Builder ═════════════════════════════════════════════ -->
+  <div id="tab-canvas" class="tab-page active">
+    <aside id="node-palette">
+      <div class="palette-title">Node Palette</div>
+      <div class="palette-items">
+        <div class="palette-item" draggable="true" data-kind="market">
+          <span class="node-icon">📈</span>
+          <span class="node-label">Market</span>
+        </div>
+        <div class="palette-item" draggable="true" data-kind="news">
+          <span class="node-icon">📰</span>
+          <span class="node-label">News</span>
+        </div>
+        <div class="palette-item" draggable="true" data-kind="polymarket">
+          <span class="node-icon">🎯</span>
+          <span class="node-label">PolyMarket</span>
+        </div>
+        <div class="palette-item" draggable="true" data-kind="map">
+          <span class="node-icon">🗺</span>
+          <span class="node-label">Map</span>
+        </div>
+        <div class="palette-item" draggable="true" data-kind="general">
+          <span class="node-icon">⚙</span>
+          <span class="node-label">General</span>
+        </div>
+        <div class="palette-item" draggable="true" data-kind="edgeRule">
+          <span class="node-icon">⚡</span>
+          <span class="node-label">Edge Rule</span>
+        </div>
+      </div>
+      <div class="palette-actions">
+        <button id="canvas-save-btn">Save Canvas</button>
+        <button id="canvas-clear-btn" class="danger">Clear</button>
+      </div>
+    </aside>
+
+    <div id="canvas-container">
+      <div id="canvas-world">
+        <svg id="canvas-svg"></svg>
+        <!-- nodes injected here -->
+      </div>
+    </div>
+
+    <aside id="node-flyout" class="flyout hidden" aria-hidden="true"><!-- legacy; replaced by modal --></aside>
+  </div>
+
+  <!-- ══ TAB: Browser Triggers ════════════════════════════════════════════════ -->
+  <div id="tab-objects" class="tab-page">
+    <div class="objects-toolbar">
+      <input id="objects-search" type="search" placeholder="Search triggers…" />
+      <select id="objects-filter-kind">
+        <option value="">All kinds</option>
+        <option value="market">Market</option>
+        <option value="news">News</option>
+        <option value="polymarket">PolyMarket</option>
+        <option value="map">Map</option>
+        <option value="general">General</option>
+      </select>
+      <label class="checkbox-label">
+        <input id="objects-filter-unread" type="checkbox" />
+        Unread only
+      </label>
+      <button id="objects-mark-all-btn">Mark all read</button>
+      <button id="objects-clear-btn" class="danger">Clear all</button>
+    </div>
+    <div class="triggers-layout">
+      <div class="triggers-list-pane" id="objects-list">
+        <div class="empty-state">No triggers yet.</div>
+      </div>
+      <div class="trigger-detail-pane" id="trigger-detail">
+        <div class="detail-placeholder">🔔 Select a trigger to view its data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB: Edge Rules ═════════════════════════════════════════════════ -->
+  <div id="tab-rules" class="tab-page">
+    <div class="rules-layout">
+      <div class="rules-list-panel">
+        <div class="panel-header">
+          <span>Edge Rules</span>
+          <button id="rule-new-btn">+ New Rule</button>
+        </div>
+        <ul id="rules-list"></ul>
+      </div>
+      <div class="rules-form-panel">
+        <form id="rule-form" class="hidden">
+          <div class="form-group">
+            <label>Name</label>
+            <input id="rule-name" type="text" placeholder="Rule name" required />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input id="rule-desc" type="text" placeholder="Optional description" />
+          </div>
+          <div class="form-group">
+            <label>ICM Type</label>
+            <select id="rule-icm-type">
+              <option value="*">* (any)</option>
+              <option value="icm:market-update">icm:market-update</option>
+              <option value="icm:news-update">icm:news-update</option>
+              <option value="icm:polymarket-update">icm:polymarket-update</option>
+              <option value="icm:map-event">icm:map-event</option>
+              <option value="icm:general">icm:general</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Count threshold</label>
+              <input id="rule-count" type="number" min="1" value="1" />
+            </div>
+            <div class="form-group">
+              <label>Window (ms)</label>
+              <input id="rule-window" type="number" min="1000" value="60000" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Filter field</label>
+            <input id="rule-filter-field" type="text" placeholder="e.g. ticker" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Operator</label>
+              <select id="rule-filter-op">
+                <option value="">(none)</option>
+                <option value="eq">eq</option>
+                <option value="neq">neq</option>
+                <option value="gt">gt</option>
+                <option value="lt">lt</option>
+                <option value="gte">gte</option>
+                <option value="lte">lte</option>
+                <option value="contains">contains</option>
+                <option value="regex">regex</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Value</label>
+              <input id="rule-filter-value" type="text" placeholder="filter value" />
+            </div>
+          </div>
+
+          <div class="form-section-title">Action</div>
+          <div class="form-group">
+            <label>Action type</label>
+            <select id="rule-action-type">
+              <option value="email">Email</option>
+              <option value="webhook">Webhook</option>
+            </select>
+          </div>
+          <div id="action-email-fields">
+            <div class="form-group">
+              <label>To (comma-separated)</label>
+              <input id="rule-email-to" type="text" placeholder="user@example.com" />
+            </div>
+            <div class="form-group">
+              <label>Subject template</label>
+              <input id="rule-email-subject" type="text" placeholder="Alert: {{ruleName}}" />
+            </div>
+            <div class="form-group">
+              <label>Body template</label>
+              <textarea id="rule-email-body" rows="3" placeholder="{{count}} events in {{windowMs}}ms"></textarea>
+            </div>
+          </div>
+          <div id="action-webhook-fields" class="hidden">
+            <div class="form-group">
+              <label>URL</label>
+              <input id="rule-webhook-url" type="url" placeholder="https://hooks.example.com/..." />
+            </div>
+            <div class="form-group">
+              <label>Method</label>
+              <select id="rule-webhook-method">
+                <option>POST</option>
+                <option>PUT</option>
+                <option>PATCH</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Body template (JSON)</label>
+              <textarea id="rule-webhook-body" rows="3" placeholder='{"event":"{{icmType}}"}'></textarea>
+            </div>
+          </div>
+
+          <div class="form-footer">
+            <button type="submit">Save Rule</button>
+            <button type="button" id="rule-test-btn">Test Rule</button>
+            <button type="button" id="rule-delete-btn" class="danger">Delete</button>
+          </div>
+        </form>
+        <div id="rule-test-log" class="test-log hidden"></div>
+        <div id="rule-empty" class="empty-state">Select or create a rule.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Notification Drawer ═════════════════════════════════════════════ -->
+  <div id="notif-drawer" class="drawer hidden">
+    <div class="drawer-header">
+      <span>Notifications</span>
+      <button id="drawer-close" class="icon-btn">✕</button>
+    </div>
+    <div id="drawer-list"></div>
+  </div>
+
+  <!-- ══ Toast container ════════════════════════════════════════════════ -->
+  <div id="toast-container"></div>
+
+  <!-- Profile modal -->
+  <div id="profile-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="profile-modal-title">New Profile</span>
+        <button class="icon-btn modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Name</label>
+          <input id="profile-modal-name" type="text" placeholder="Profile name" />
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input id="profile-modal-desc" type="text" placeholder="Optional description" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="profile-modal-confirm">Create</button>
+        <button class="modal-close danger">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<script type="module" src="/src/main.js"></script>
+
+<!-- ══ Node Config Modal ══════════════════════════════════════════════════ -->
+<div id="node-config-modal" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span id="node-modal-title">Configure Node</span>
+      <button id="node-modal-close" class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body" id="node-modal-body">
+      <!-- form injected by node-config.js -->
+    </div>
+    <div class="modal-footer">
+      <button id="node-modal-delete" class="btn danger">🗑 Delete</button>
+      <button id="node-modal-cancel" class="btn">Cancel</button>
+      <button id="node-modal-apply"  class="btn accent">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Edge Config Modal ══════════════════════════════════════════════════ -->
+<div id="edge-config-modal" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>⚡ Configure Connection</span>
+      <button id="edge-modal-close" class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body" id="edge-modal-body">
+      <!-- form injected by node-config.js -->
+    </div>
+    <div class="modal-footer">
+      <button id="edge-modal-cancel" class="btn">Cancel</button>
+      <button id="edge-modal-apply"  class="btn accent">Apply</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

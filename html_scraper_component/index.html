@@ -15,6 +15,7 @@
       </div>
       <div class="header-right">
         <a class="btn btn-ghost btn-sm header-ext-link" href="http://localhost:5175" target="_blank" rel="noopener" title="Open API Explorer">⚡ API Explorer ↗</a>
+        <a class="btn btn-ghost btn-sm header-ext-link" href="http://localhost:5176" target="_blank" rel="noopener" title="Open Notification Center">🔔 Notification Center ↗</a>
         <a class="btn btn-ghost btn-sm header-ext-link" href="http://localhost:5174" target="_blank" rel="noopener" title="Open KG Explorer">⬡ KG Explorer ↗</a>
         <div class="api-url-row">
           <span class="api-label">API</span>
@@ -49,6 +50,7 @@
     <nav id="app-nav">
       <button class="app-nav-btn active" data-page="dashboard">Dashboard</button>
       <button class="app-nav-btn" data-page="kg">⬡ Knowledge Graph</button>
+      <button class="app-nav-btn" data-page="nc">🔔 NC Canvas</button>
     </nav>
 
     <!-- ── Page: Dashboard ───────────────────────────────── -->
@@ -227,6 +229,17 @@
         allow="clipboard-write"
       ></iframe>
     </div><!-- /#page-kg -->
+
+    <!-- ── Page: NC Canvas ───────────────────────── -->
+    <div id="page-nc" class="app-page">
+      <iframe
+        id="nc-frame"
+        src="http://localhost:5176"
+        style="width:100%;height:100%;border:none;display:block;"
+        title="Notification Center Canvas"
+        allow="clipboard-write"
+      ></iframe>
+    </div><!-- /#page-nc -->
 
     <!-- ── KG Send Modal ───────────────────────────── -->
     <div id="modal-kg-send" class="kg-modal">

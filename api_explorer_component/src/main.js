@@ -1,6 +1,7 @@
 import './style.css';
 import { SCRAPER_ENDPOINTS } from './endpoints-scraper.js';
 import { KG_ENDPOINTS }      from './endpoints-kg.js';
+import { NC_ENDPOINTS }      from './endpoints-nc.js';
 import { createExplorer }    from './explorer.js';
 
 // ── Top-level pane switching ──────────────────────────────────────────────────
@@ -27,4 +28,10 @@ createExplorer({
   prefix:    'kg',
   endpoints: KG_ENDPOINTS,
   urlPrefix: '/api/kg',
+});
+
+createExplorer({
+  prefix:    'nc',
+  endpoints: NC_ENDPOINTS,
+  urlPrefix: '/api/nc',
 });

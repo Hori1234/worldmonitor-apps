@@ -10,6 +10,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/kg/, ''),
       },
+      // Notification Center service
+      '/api/nc': {
+        target: 'http://localhost:3003',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/nc/, ''),
+      },
       // Scraper service
       '/api': {
         target: 'http://localhost:3737',
