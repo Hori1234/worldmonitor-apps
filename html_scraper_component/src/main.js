@@ -8,7 +8,7 @@ import { toast }        from './toast.js';
 import { initFileBrowser, getCurrentRaw } from './filebrowser.js';
 import { initNotifications, addNotification } from './notifications.js';
 import { initSettings } from './settings.js';
-import { initExplorer } from './api-explorer.js';
+
 
 // ── Top-level page navigation ────────────────────────────────────────────
 
@@ -158,7 +158,6 @@ initNotifications((cb) => {
   document.addEventListener('ws:event', (e) => cb(e.detail));
 });
 initSettings();
-initExplorer();
 initWebSocket();
 initDrawerClose();
 checkHealth();

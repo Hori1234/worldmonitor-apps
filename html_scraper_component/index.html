@@ -11,7 +11,7 @@
     <header id="app-header">
       <div class="header-left">
         <span class="logo">🕷</span>
-        <span class="app-title">Scraper Dashboard</span>
+        <span class="app-title">Knowledge Dashboard</span>
       </div>
       <div class="header-right">
         <div class="api-url-row">
@@ -46,7 +46,6 @@
     <!-- ── Top-level app navigation ─────────────────────── -->
     <nav id="app-nav">
       <button class="app-nav-btn active" data-page="dashboard">Dashboard</button>
-      <button class="app-nav-btn" data-page="explorer">API Explorer</button>
       <button class="app-nav-btn" data-page="kg">⬡ Knowledge Graph</button>
     </nav>
 
@@ -215,39 +214,6 @@
 
     </main>
     </div><!-- /#page-dashboard -->
-
-    <!-- ── Page: API Explorer ────────────────────────────── -->
-    <div id="page-explorer" class="app-page">
-      <div class="ex-layout">
-
-        <!-- Sidebar -->
-        <div class="ex-sidebar">
-          <div class="ex-sidebar-search">
-            <input id="ex-search" type="search" placeholder="Search endpoints…" />
-          </div>
-          <div id="ex-sidebar-list" class="ex-sidebar-list"></div>
-        </div>
-
-        <!-- Main area -->
-        <div class="ex-main">
-
-          <!-- Request -->
-          <div class="ex-section ex-request-section">
-            <div class="ex-section-label">REQUEST</div>
-            <div id="ex-request-panel"></div>
-          </div>
-
-          <!-- Response -->
-          <div class="ex-section ex-response-section">
-            <div class="ex-section-label">RESPONSE</div>
-            <div id="ex-response-panel">
-              <p class="ex-res-placeholder">Send a request to see the response here.</p>
-            </div>
-          </div>
-
-        </div><!-- /.ex-main -->
-      </div><!-- /.ex-layout -->
-    </div><!-- /#page-explorer -->
 
     <!-- ── Page: Knowledge Graph ─────────────────────── -->
     <div id="page-kg" class="app-page">

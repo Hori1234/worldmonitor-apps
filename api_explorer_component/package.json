@@ -1,0 +1,16 @@
+{
+  "name": "api-explorer",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "highlight.js": "^11.10.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.7"
+  }
+}
