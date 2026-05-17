@@ -224,8 +224,50 @@ button.accent:hover { background: #33dd77; }
 }
 .node-resize-handle:hover { background: linear-gradient(135deg, transparent 50%, var(--accent) 50%); }
 
-/* Edge label (kept for fallback) */
-.canvas-edge-label { font-size: 10px; fill: var(--text-3); pointer-events: none; }
+.payload-src         { font-size:10px; color:var(--text-3); white-space:nowrap; }
+.payload-src.chained { color:var(--warn); font-weight:600; }
+
+/* ── Edge Rule: Connected Input Conditions ──────────────────────── */
+.input-cond-item {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 6px;
+}
+.input-cond-header {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px; background: var(--bg-3); cursor: default; user-select: none;
+}
+.input-cond-toggle {
+  font-size: 9px; padding: 1px 4px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-3); cursor: pointer;
+  border-radius: 3px; line-height: 1; flex-shrink: 0;
+}
+.input-cond-toggle:hover { background: var(--bg-hover); }
+.input-cond-label {
+  font-size: 11px; color: var(--text-2); font-family: monospace;
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.input-cond-count { font-size: 9px; color: var(--text-3); flex-shrink: 0; }
+.input-cond-body { padding: 6px 8px; background: var(--bg-2); }
+.input-cond-body.hidden { display: none; }
+.input-cond-empty { font-size: 11px; color: var(--text-3); font-style: italic; padding: 4px 0; }
+.input-cond-save-row { padding: 6px 0 2px; display: flex; justify-content: flex-end; }
+.cond-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.cond-table th {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3);
+  padding: 2px 4px; text-align: left; border-bottom: 1px solid var(--border);
+}
+.cond-row td { padding: 3px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.cond-field { font-family: monospace; color: var(--text); font-size: 11px; }
+.cond-chain { color: var(--warn); font-size: 9px; cursor: help; }
+.cond-source { font-size: 10px; color: var(--text-3); }
+.cond-op  {
+  width: 84px; font-size: 11px; padding: 1px 3px;
+  background: var(--bg-3); border: 1px solid var(--border); color: var(--text); border-radius: 3px;
+}
+.cond-val {
+  width: 100%; font-size: 11px; padding: 1px 4px;
+  background: var(--bg-3); border: 1px solid var(--border); color: var(--text); border-radius: 3px;
+}
 /* Edge badge (trigger name + payload count pill) */
 .canvas-edge-badge rect { fill: color-mix(in srgb, var(--bg-3) 92%, transparent); stroke: var(--border-2); stroke-width: 1; }
 .canvas-edge-badge text { fill: var(--text); font-size: 10px; font-family: monospace; pointer-events: none; }
@@ -277,9 +319,9 @@ button.accent:hover { background: #33dd77; }
 .modal-overlay.hidden { display: none; }
 .modal {
   background: var(--bg-2); border: 1px solid var(--border);
-  border-radius: var(--radius); width: 360px; display: flex; flex-direction: column; box-sizing: border-box;
+  border-radius: var(--radius); width: 660px; display: flex; flex-direction: column; box-sizing: border-box;
 }
-.modal-wide { width: 940px; max-width: 96vw; max-height: 88vh; overflow-x: hidden; overflow-y: auto; }
+.modal-wide { width: 60vw; min-width: 800px; max-width: 96vw; max-height: 88vh; overflow-x: hidden; overflow-y: auto; }
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600;

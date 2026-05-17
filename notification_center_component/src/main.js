@@ -5,11 +5,11 @@
 import './style.css';
 import { initNotifications }    from './notifications.js';
 import { initProfileSelector, getCurrentProfileId } from './profile-selector.js';
-import { initCanvas, loadCanvasState, getCanvasState, clearCanvas, removeNode, updateEdgeMeta, updateNodeData } from './canvas.js';
+import { initCanvas, loadCanvasState, getCanvasState, clearCanvas, removeNode, updateEdgeMeta, updateNodeData, getAggregatedPayload } from './canvas.js';
 import { initNodePalette }      from './node-palette.js';
 import { initNodeConfig, openFlyout, initEdgeModal, openEdgeModal } from './node-config.js';
 import { initObjectsBrowser }   from './objects-browser.js';
-import { initEdgeRuleBuilder, syncEdgeRuleNode, navigateToRule }  from './edge-rule-builder.js';
+import { initEdgeRuleBuilder, syncEdgeRuleNode, navigateToRule, refreshInputConditions }  from './edge-rule-builder.js';
 import { connectWS }            from './api.js';
 import * as api                 from './api.js';
 import { toast }                from './toast.js';
@@ -136,18 +136,20 @@ function init() {
     onNodeOpen:   (node) => openFlyout(node),
     onDelete:     () => {},
     onEdgeCreate: (edge) => {
-      const state    = getCanvasState();
-      const fromNode = state.nodes.find((n) => n.id === edge.fromNodeId);
-      const toNode   = state.nodes.find((n) => n.id === edge.toNodeId);
-      openEdgeModal(edge, { fromNode, toNode }, (meta) => updateEdgeMeta(edge.id, meta));
+      const state            = getCanvasState();
+      const fromNode         = state.nodes.find((n) => n.id === edge.fromNodeId);
+      const toNode           = state.nodes.find((n) => n.id === edge.toNodeId);
+      const aggregatedPayload = getAggregatedPayload(edge.fromNodeId, state.nodes, state.edges);
+      openEdgeModal(edge, { fromNode, toNode, aggregatedPayload }, (meta) => updateEdgeMeta(edge.id, meta));
     },
     onEdgeEdit: (edgeId) => {
-      const state    = getCanvasState();
-      const edge     = state.edges.find((e) => e.id === edgeId);
+      const state            = getCanvasState();
+      const edge             = state.edges.find((e) => e.id === edgeId);
       if (!edge) return;
-      const fromNode = state.nodes.find((n) => n.id === edge.fromNodeId);
-      const toNode   = state.nodes.find((n) => n.id === edge.toNodeId);
-      openEdgeModal(edge, { fromNode, toNode }, (meta) => updateEdgeMeta(edgeId, meta));
+      const fromNode         = state.nodes.find((n) => n.id === edge.fromNodeId);
+      const toNode           = state.nodes.find((n) => n.id === edge.toNodeId);
+      const aggregatedPayload = getAggregatedPayload(edge.fromNodeId, state.nodes, state.edges);
+      openEdgeModal(edge, { fromNode, toNode, aggregatedPayload }, (meta) => updateEdgeMeta(edgeId, meta));
     },
   });
 
@@ -179,6 +181,7 @@ function init() {
   // Auto-save canvas after every change (debounced 1.5 s)
   let _autoSaveTimer = null;
   document.addEventListener('nc:canvas:change', () => {
+    refreshInputConditions();
     clearTimeout(_autoSaveTimer);
     _autoSaveTimer = setTimeout(() => {
       _autoSave(getCurrentProfileId());

@@ -3,14 +3,15 @@
  * Center-screen modal for node config and edge connection config.
  */
 
-import { updateNodeData } from './canvas.js';
-import { getRules }       from './edge-rule-builder.js';
+import { updateNodeData, updateEdgeMeta, getCanvasState, getAggregatedPayload } from './canvas.js';
+import { getRules } from './edge-rule-builder.js';
 
 let _activeNodeId      = null;
 let _onDeleteNode      = null;
 let _edgeApplyCallback = null;
 let _fromNode          = null; // source node for current edge modal
 let _toNode            = null; // target node for current edge modal
+let _aggregatedPayload = null; // chained payload fields from getAggregatedPayload(fromNode)
 
 // ── Node config modal ─────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ export function initNodeConfig({ onDelete } = {}) {
     if (!_activeNodeId) return;
     const data = _readForm();
     updateNodeData(_activeNodeId, data);
+    _saveOutConditions();
     _closeNodeModal();
   });
 
@@ -46,7 +48,37 @@ function _openNodeModal(node) {
   _activeNodeId = node.id;
   document.getElementById('node-modal-title').textContent =
     `${_kindIcon(node.kind)} Configure ${_kindLabel(node.kind)}`;
-  document.getElementById('node-modal-body').innerHTML = _buildForm(node.kind, node.data ?? {});
+
+  const formHtml = _buildForm(node.kind, node.data ?? {});
+
+  if (node.kind === 'edgeRule') {
+    // EdgeRule already has Connected Inputs in its own panel — single column
+    document.getElementById('node-modal-body').innerHTML = formHtml;
+  } else {
+    // Two-column layout: left = node fields, right = auto-trigger conditions
+    const { nodes, edges } = getCanvasState();
+    const condHtml = _outTriggerConditionsHtml(node, nodes, edges);
+    document.getElementById('node-modal-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${formHtml}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="form-section-title">Auto-Trigger Conditions</div>
+          <p style="font-size:11px;color:var(--text-3);margin:0">Per outgoing edge — edge fires only when <em>all</em> active conditions pass.</p>
+          ${condHtml}
+        </div>
+      </div>`;
+    // Wire accordion toggles for outgoing condition panels
+    document.getElementById('node-modal-body').querySelectorAll('.input-cond-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const body = btn.closest('.input-cond-item').querySelector('.input-cond-body');
+        const closed = body.classList.toggle('hidden');
+        btn.textContent = closed ? '▶' : '▼';
+      });
+    });
+  }
+
   document.getElementById('node-config-modal').classList.remove('hidden');
 
   // Wire the "assign rule" dropdown for edgeRule nodes
@@ -72,6 +104,90 @@ function _closeNodeModal() {
   document.getElementById('node-config-modal')?.classList.add('hidden');
 }
 
+// ── Auto-trigger conditions (outgoing edges) ──────────────────────────────────
+
+/** Renders one accordion per outgoing edge with a condition table. */
+function _outTriggerConditionsHtml(node, allNodes, allEdges) {
+  const outEdges = allEdges.filter((e) => e.fromNodeId === node.id);
+  if (!outEdges.length) {
+    return '<p class="input-cond-empty">No outgoing edges yet — draw connections from this node on the canvas.</p>';
+  }
+
+  // Fields available to condition on = everything this node can output
+  const ownPayload = getAggregatedPayload(node.id, allNodes, allEdges);
+
+  const opOpts = (sel) => ['', '==', '!=', '>', '<', '>=', '<=', 'contains', 'regex']
+    .map((op) => `<option value="${op}" ${op === sel ? 'selected' : ''}>${op || '(skip)'}</option>`)
+    .join('');
+
+  return outEdges.map((edge, idx) => {
+    const toNode     = allNodes.find((n) => n.id === edge.toNodeId);
+    const toLabel    = _nodeLabel(toNode) || `Output ${idx + 1}`;
+    const toIcon     = toNode ? (KIND_ICONS[toNode.kind] ?? '') : '';
+    const savedConds = edge.meta?.outConditions ?? [];
+
+    const rows = ownPayload.map((ap) => {
+      const c       = savedConds.find((sc) => sc.field === ap.field && sc.sourceNodeId === ap.sourceNodeId) ?? {};
+      const srcIcon = KIND_ICONS[ap.sourceNodeKind] ?? '';
+      const chain   = (ap.chain?.length ?? 0) > 1
+        ? `<span class="cond-chain" title="${_esc(ap.chain.join(' → '))}"> ↑</span>` : '';
+      return `<tr class="cond-row"
+          data-field="${_esc(ap.field)}"
+          data-source-node-id="${_esc(ap.sourceNodeId ?? '')}"
+          data-source-node-kind="${_esc(ap.sourceNodeKind ?? '')}"
+          data-source-node-label="${_esc(ap.sourceNodeLabel ?? '')}">
+          <td class="cond-field">${_esc(ap.field)}${chain}</td>
+          <td class="cond-source">${srcIcon} ${_esc(ap.sourceNodeLabel ?? '')}</td>
+          <td><select class="cond-op">${opOpts(c.operator ?? '')}</select></td>
+          <td><input type="text" class="cond-val" value="${_esc(c.value ?? '')}" placeholder="value…" /></td>
+        </tr>`;
+    }).join('');
+
+    const activeCount = savedConds.length;
+    const badge = activeCount ? `<span class="input-cond-count">${activeCount} active</span>` : '';
+
+    return `<div class="input-cond-item" data-edge-id="${_esc(edge.id)}">
+      <div class="input-cond-header">
+        <button type="button" class="input-cond-toggle">▶</button>
+        <span class="input-cond-label">${toIcon} ${_esc(toLabel)}</span>
+        ${badge}
+      </div>
+      <div class="input-cond-body hidden">
+        ${rows ? `<table class="cond-table">
+          <thead><tr><th>Field</th><th>From</th><th>Operator</th><th>Value</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>` : '<p class="input-cond-empty">No fields available.</p>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/** Reads condition rows from the modal and persists them to each edge's meta. */
+function _saveOutConditions() {
+  const body = document.getElementById('node-modal-body');
+  if (!body) return;
+  const { edges } = getCanvasState();
+  body.querySelectorAll('.input-cond-item[data-edge-id]').forEach((item) => {
+    const edgeId = item.dataset.edgeId;
+    if (!edges.find((e) => e.id === edgeId)) return;
+    const outConditions = [];
+    item.querySelectorAll('.cond-row').forEach((row) => {
+      const op  = row.querySelector('.cond-op')?.value;
+      const val = row.querySelector('.cond-val')?.value?.trim() ?? '';
+      if (!op) return;
+      outConditions.push({
+        field:           row.dataset.field,
+        sourceNodeId:    row.dataset.sourceNodeId    || undefined,
+        sourceNodeKind:  row.dataset.sourceNodeKind  || undefined,
+        sourceNodeLabel: row.dataset.sourceNodeLabel || undefined,
+        operator:        op,
+        value:           val,
+      });
+    });
+    updateEdgeMeta(edgeId, { outConditions });
+  });
+}
+
 // ── Edge config modal ─────────────────────────────────────────────────────────
 
 export function initEdgeModal() {
@@ -90,17 +206,19 @@ export function initEdgeModal() {
 }
 
 export function openEdgeModal(edge, nodes, onApply) {
-  _edgeApplyCallback = onApply;
-  _fromNode = nodes?.fromNode ?? null;
-  _toNode   = nodes?.toNode   ?? null;
+  _edgeApplyCallback    = onApply;
+  _fromNode             = nodes?.fromNode          ?? null;
+  _toNode               = nodes?.toNode            ?? null;
+  _aggregatedPayload    = nodes?.aggregatedPayload ?? null;
   document.getElementById('edge-modal-body').innerHTML = _edgeForm(edge.meta ?? {}, _fromNode, _toNode);
   document.getElementById('edge-config-modal').classList.remove('hidden');
 }
 
 function _closeEdgeModal() {
   _edgeApplyCallback = null;
-  _fromNode = null;
-  _toNode   = null;
+  _fromNode          = null;
+  _toNode            = null;
+  _aggregatedPayload = null;
   document.getElementById('edge-config-modal')?.classList.add('hidden');
 }
 
@@ -109,37 +227,56 @@ function _edgeForm(meta, fromNode, toNode) {
     .map((v) => `<option value="${v}" ${v === (meta.action ?? '') ? 'selected' : ''}>${v || 'None'}</option>`)
     .join('');
 
-  // ── Trigger payload section ──────────────────────────────────────────────
-  const sourceFields    = _sourceFields(fromNode);
+  // ── Trigger payload section (chained) ────────────────────────────────
+  // Use the aggregated payload (upstream chain) when available; fall back to source node's own fields.
+  const allFields = (_aggregatedPayload?.length)
+    ? _aggregatedPayload
+    : _sourceFields(fromNode).map((field) => ({
+        field,
+        targetField:     field,
+        sourceNodeId:    fromNode?.id    ?? null,
+        sourceNodeKind:  fromNode?.kind  ?? null,
+        sourceNodeLabel: _nodeLabel(fromNode),
+        chain:           fromNode ? [_nodeLabel(fromNode)] : [],
+      }));
+
   const existingPayload = meta.triggerPayload ?? [];
 
-  const payloadRows = sourceFields.map((field) => {
-    const ex      = existingPayload.find((p) => p.field === field);
-    const enabled = ex ? ex.enabled !== false : false;
-    const target  = ex?.targetField ?? field;
+  const payloadRows = allFields.map((ap) => {
+    const ex        = existingPayload.find((p) => p.field === ap.field && (p.sourceNodeId == null || p.sourceNodeId === ap.sourceNodeId));
+    const enabled   = ex ? ex.enabled !== false : false;
+    const target    = ex?.targetField ?? ap.targetField ?? ap.field;
+    const isChained = (ap.chain?.length ?? 0) > 1;
+    const fromLbl   = ap.sourceNodeKind ? `${KIND_ICONS[ap.sourceNodeKind] ?? ''} ${_esc(ap.sourceNodeLabel ?? '')}` : '';
+    const chainTip  = (ap.chain ?? []).join(' → ');
     return `
       <tr class="payload-row">
-        <td style="padding:3px 6px"><input type="checkbox" class="payload-check" data-field="${_esc(field)}" ${enabled ? 'checked' : ''} /></td>
-        <td style="padding:3px 4px;font-family:monospace;font-size:11px;color:var(--text)">${_esc(field)}</td>
+        <td style="padding:3px 6px">
+          <input type="checkbox" class="payload-check"
+            data-field="${_esc(ap.field)}"
+            data-source-node-id="${_esc(ap.sourceNodeId ?? '')}"
+            data-source-node-kind="${_esc(ap.sourceNodeKind ?? '')}"
+            data-source-node-label="${_esc(ap.sourceNodeLabel ?? '')}"
+            ${enabled ? 'checked' : ''} />
+        </td>
+        <td style="padding:3px 4px;font-family:monospace;font-size:11px;color:var(--text)">${_esc(ap.field)}</td>
+        <td class="payload-src${isChained ? ' chained' : ''}" title="${_esc(chainTip)}" style="padding:3px 4px;font-size:10px;color:var(--text-3);white-space:nowrap">${fromLbl}</td>
         <td style="padding:3px 2px;color:var(--text-3);font-size:11px">&rarr;</td>
-        <td style="padding:3px 4px"><input type="text" class="payload-target-field" value="${_esc(target)}" placeholder="${_esc(field)}" style="width:100%;font-size:11px;padding:2px 4px;background:var(--bg-2);border:1px solid var(--border);border-radius:3px;color:var(--text)"></td>
+        <td style="padding:3px 4px"><input type="text" class="payload-target-field" value="${_esc(target)}" placeholder="${_esc(ap.field)}" style="width:100%;font-size:11px;padding:2px 4px;background:var(--bg-2);border:1px solid var(--border);border-radius:3px;color:var(--text)"></td>
       </tr>`;
   }).join('');
 
-  const srcLabel = fromNode
-    ? `${KIND_ICONS[fromNode.kind] ?? '⬜'} ${_esc(fromNode.data?.title ?? fromNode.data?.ticker ?? fromNode.data?.ruleName ?? KIND_LABELS[fromNode.kind] ?? fromNode.kind)}`
-    : '(source)';
-  const tgtLabel = toNode
-    ? `${KIND_ICONS[toNode.kind] ?? '⬜'} ${_esc(toNode.data?.title ?? toNode.data?.ticker ?? toNode.data?.ruleName ?? KIND_LABELS[toNode.kind] ?? toNode.kind)}`
-    : '(target)';
+  const srcLabel = fromNode ? `${KIND_ICONS[fromNode.kind] ?? '⬜'} ${_esc(_nodeLabel(fromNode))}` : '(source)';
+  const tgtLabel = toNode   ? `${KIND_ICONS[toNode.kind]   ?? '⬜'} ${_esc(_nodeLabel(toNode))}`   : '(target)';
 
-  const payloadSection = sourceFields.length
+  const payloadSection = allFields.length
     ? `<div class="form-group">
-        <label>Payload fields <span style="font-size:10px;font-weight:normal;color:var(--text-3)">(&#9745; = pass field through edge)</span></label>
+        <label>Payload fields <span style="font-size:10px;font-weight:normal;color:var(--text-3)">(&#9745; = include in trigger)</span></label>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="font-size:10px;color:var(--text-3)">
             <th style="width:20px"></th>
-            <th style="text-align:left;padding:2px 4px">Source field</th>
+            <th style="text-align:left;padding:2px 4px">Field</th>
+            <th style="text-align:left;padding:2px 4px">From</th>
             <th style="width:18px"></th>
             <th style="text-align:left;padding:2px 4px">Target alias</th>
           </tr></thead>
@@ -180,16 +317,19 @@ function _edgeForm(meta, fromNode, toNode) {
 function _readEdgeForm() {
   const v = (id) => document.getElementById(id)?.value ?? '';
 
-  // Collect checked payload fields
+  // Collect checked payload fields (with provenance for chain tracking)
   const triggerPayload = [];
   document.querySelectorAll('#edge-modal-body .payload-row').forEach((row) => {
     const check  = row.querySelector('.payload-check');
     const target = row.querySelector('.payload-target-field');
     if (check?.checked) {
       triggerPayload.push({
-        field:       check.dataset.field,
-        targetField: target?.value.trim() || check.dataset.field,
-        enabled:     true,
+        field:           check.dataset.field,
+        targetField:     target?.value.trim() || check.dataset.field,
+        enabled:         true,
+        sourceNodeId:    check.dataset.sourceNodeId    || undefined,
+        sourceNodeKind:  check.dataset.sourceNodeKind  || undefined,
+        sourceNodeLabel: check.dataset.sourceNodeLabel || undefined,
       });
     }
   });
@@ -380,6 +520,10 @@ function _sourceFields(node) {
   return [...base, ...extra];
 }
 
+function _nodeLabel(node) {
+  if (!node) return '';
+  return node.data?.title ?? node.data?.ticker ?? node.data?.ruleName ?? KIND_LABELS[node.kind] ?? node.kind ?? '';
+}
 function _kindIcon(k)  { return KIND_ICONS[k]  ?? '🔔'; }
 function _kindLabel(k) { return KIND_LABELS[k] ?? k; }
 

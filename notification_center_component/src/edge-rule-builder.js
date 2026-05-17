@@ -6,6 +6,9 @@
 
 import * as api  from './api.js';
 import { toast } from './toast.js';
+import { getCanvasState, getAggregatedPayload, updateNodeData } from './canvas.js';
+
+const KIND_ICONS = { market: '📈', news: '📰', polymarket: '🎯', map: '🗺', general: '⚙', edgeRule: '⚡' };
 
 let _rules        = [];
 let _activeRuleId = null;
@@ -149,6 +152,8 @@ function _populateForm(rule) {
   }
   _syncActionFields();
   _showForm();
+  // Render connected-input conditions panel
+  _renderInputConditions(rule.id);
 }
 
 function _syncActionFields() {
@@ -390,4 +395,153 @@ export function navigateToRule(ruleId) {
     const rule = _rules.find((r) => r.id === ruleId);
     if (rule) _selectRule(ruleId);
   }, 60);
+}
+
+/**
+ * Re-render the Connected Inputs panel for the currently active rule.
+ * Call this after canvas edges change (e.g. from main.js on canvas:change).
+ */
+export function refreshInputConditions() {
+  if (_activeRuleId) _renderInputConditions(_activeRuleId);
+}
+
+// ── Connected Inputs (chained payload conditions) ──────────────────────────
+
+function _renderInputConditions(ruleId) {
+  const container = document.getElementById('rule-input-conditions');
+  if (!container) return;
+
+  const { nodes, edges } = getCanvasState();
+  const canvasNode = nodes.find((n) => n.kind === 'edgeRule' && n.data?._ruleId === ruleId);
+
+  if (!canvasNode) {
+    container.innerHTML = '<p class="input-cond-empty">No canvas node linked to this rule.</p>';
+    return;
+  }
+
+  const inEdges = edges.filter((e) => e.toNodeId === canvasNode.id);
+  if (!inEdges.length) {
+    container.innerHTML = '<p class="input-cond-empty">No inputs connected yet — draw edges to this node on the canvas.</p>';
+    return;
+  }
+
+  const existingConds = canvasNode.data?._inputConditions ?? [];
+  const ruleLabel     = canvasNode.data?.ruleName ?? canvasNode.data?.icmType ?? 'EdgeRule';
+
+  container.innerHTML = inEdges.map((edge, idx) => {
+    // Build the field list from only the explicitly enabled trigger-payload fields.
+    // getAggregatedPayload is called on the from-node only for provenance / chain info.
+    const enabledFields = (edge.meta?.triggerPayload ?? []).filter((p) => p.enabled);
+    const upstream      = enabledFields.length ? getAggregatedPayload(edge.fromNodeId, nodes, edges) : [];
+    const fromNode      = nodes.find((n) => n.id === edge.fromNodeId);
+    const fromLabel     = fromNode?.data?.title || fromNode?.data?.ticker || fromNode?.data?.ruleName || fromNode?.kind || 'Node';
+    const aggPayload    = enabledFields.map((p) => {
+      const fieldName = p.targetField ?? p.field;
+      const origin    = upstream.find((u) => u.field === p.field || u.targetField === p.field || u.field === p.targetField);
+      return {
+        field:           fieldName,
+        targetField:     fieldName,
+        sourceNodeId:    p.sourceNodeId    ?? origin?.sourceNodeId    ?? edge.fromNodeId,
+        sourceNodeKind:  p.sourceNodeKind  ?? origin?.sourceNodeKind  ?? fromNode?.kind,
+        sourceNodeLabel: p.sourceNodeLabel ?? origin?.sourceNodeLabel ?? fromLabel,
+        chain:           origin?.chain     ?? [fromLabel],
+      };
+    });
+    // Prepend synthetic triggerName field if the edge has one
+    if (edge.meta?.triggerName) {
+      aggPayload.unshift({
+        field: 'triggerName', targetField: 'triggerName',
+        sourceNodeId: edge.fromNodeId, sourceNodeKind: fromNode?.kind ?? 'general',
+        sourceNodeLabel: fromLabel, chain: [fromLabel],
+      });
+    }
+
+    const maxChain    = aggPayload.reduce((max, p) => (p.chain?.length ?? 0) > max.length ? (p.chain ?? []) : max, []);
+    const chainLabel  = [...maxChain, ruleLabel].join(' → ');
+    const existing    = existingConds.find((ic) => ic.edgeId === edge.id) ?? {};
+    const savedConds  = existing.conditions ?? [];
+
+    const opOpts = (sel) => ['', '==', '!=', '>', '<', '>=', '<=', 'contains', 'regex'].map((op) =>
+      `<option value="${op}" ${op === sel ? 'selected' : ''}>${op || '(skip)'}</option>`
+    ).join('');
+
+    const rows = aggPayload.map((ap) => {
+      const c = savedConds.find((sc) => sc.field === ap.field && sc.sourceNodeId === ap.sourceNodeId) ?? {};
+      const srcIcon = KIND_ICONS[ap.sourceNodeKind] ?? '';
+      const chain   = ap.chain?.length > 1 ? `<span class="cond-chain" title="${_esc(ap.chain.join(' → '))}"> ↑</span>` : '';
+      return `<tr class="cond-row"
+          data-field="${_esc(ap.field)}"
+          data-source-node-id="${_esc(ap.sourceNodeId ?? '')}"
+          data-source-node-kind="${_esc(ap.sourceNodeKind ?? '')}"
+          data-source-node-label="${_esc(ap.sourceNodeLabel ?? '')}">
+          <td class="cond-field">${_esc(ap.field)}${chain}</td>
+          <td class="cond-source">${srcIcon} ${_esc(ap.sourceNodeLabel ?? '')}</td>
+          <td><select class="cond-op">${opOpts(c.operator ?? '')}</select></td>
+          <td><input type="text" class="cond-val" value="${_esc(c.value ?? '')}" placeholder="value…" /></td>
+        </tr>`;
+    }).join('');
+
+    return `<div class="input-cond-item" data-edge-id="${_esc(edge.id)}">
+      <div class="input-cond-header">
+        <button type="button" class="input-cond-toggle">▶</button>
+        <span class="input-cond-label">Input ${idx + 1}: ${_esc(chainLabel)}</span>
+        <span class="input-cond-count">${aggPayload.length} field${aggPayload.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="input-cond-body hidden">
+        <table class="cond-table">
+          <thead><tr><th>Field</th><th>From</th><th>Operator</th><th>Value</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Toggle expand/collapse
+  container.querySelectorAll('.input-cond-toggle').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const body = btn.closest('.input-cond-item').querySelector('.input-cond-body');
+      const open = body.classList.toggle('hidden');
+      btn.textContent = open ? '▶' : '▼';
+    });
+  });
+
+  // "Apply Conditions" button — insert once after container
+  if (!document.getElementById('rule-save-conditions-btn')) {
+    const row = document.createElement('div');
+    row.className = 'input-cond-save-row';
+    row.innerHTML = `<button type="button" id="rule-save-conditions-btn">Apply Conditions</button>`;
+    container.after(row);
+    row.querySelector('button').addEventListener('click', () => _saveInputConditions(canvasNode.id));
+  } else {
+    // Re-wire in case canvasNode changed
+    document.getElementById('rule-save-conditions-btn').onclick = () => _saveInputConditions(canvasNode.id);
+  }
+}
+
+function _saveInputConditions(nodeId) {
+  const container = document.getElementById('rule-input-conditions');
+  if (!container || !nodeId) return;
+
+  const inputConditions = [];
+  container.querySelectorAll('.input-cond-item').forEach((item) => {
+    const edgeId     = item.dataset.edgeId;
+    const conditions = [];
+    item.querySelectorAll('.cond-row').forEach((row) => {
+      const op  = row.querySelector('.cond-op')?.value;
+      const val = row.querySelector('.cond-val')?.value?.trim() ?? '';
+      if (!op) return; // skip unconfigured rows
+      conditions.push({
+        field:           row.dataset.field,
+        sourceNodeId:    row.dataset.sourceNodeId    || undefined,
+        sourceNodeKind:  row.dataset.sourceNodeKind  || undefined,
+        sourceNodeLabel: row.dataset.sourceNodeLabel || undefined,
+        operator:        op,
+        value:           val,
+      });
+    });
+    inputConditions.push({ edgeId, conditions });
+  });
+
+  updateNodeData(nodeId, { _inputConditions: inputConditions });
+  toast('Input conditions saved', 'success');
 }

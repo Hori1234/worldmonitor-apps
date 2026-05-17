@@ -191,6 +191,108 @@ export function clearCanvas() {
   _clearEdgesSVG();
 }
 
+// ── Chained payload ───────────────────────────────────────────────────────────
+
+const _KIND_FIELDS = {
+  market:     ['ticker', 'exchange', 'price', 'priceChangePct', 'title'],
+  news:       ['category', 'title', 'source', 'url'],
+  polymarket: ['marketId', 'question', 'yesProbability', 'noProbability'],
+  map:        ['eventCategory', 'latitude', 'longitude', 'title', 'region'],
+  general:    ['priority', 'title', 'source'],
+  edgeRule:   [],
+};
+
+function _nodeLabel(node) {
+  const d = node?.data ?? {};
+  return d.title || d.ticker || d.ruleName || KIND_LABELS[node?.kind] || node?.kind || 'Node';
+}
+
+/**
+ * Returns all payload fields available at the OUTPUT of a node, including
+ * the node's own fields AND any fields forwarded from upstream via incoming edges.
+ *
+ * Each item: { field, targetField, sourceNodeId, sourceNodeKind, sourceNodeLabel, chain }
+ *   chain — array of node-labels from the origin node through to this one,
+ *           e.g. ['AAPL Market', 'CNN News'] for a field that passed through Market→News.
+ *
+ * @param {string}   nodeId
+ * @param {object[]} allNodes  — full nodes array (e.g. from getCanvasState().nodes)
+ * @param {object[]} allEdges  — full edges array
+ * @param {Set}      _visited  — internal cycle guard (do not pass externally)
+ */
+export function getAggregatedPayload(nodeId, allNodes, allEdges, _visited = new Set()) {
+  if (_visited.has(nodeId)) return [];
+  const visited = new Set([..._visited, nodeId]);
+
+  const node = allNodes.find((n) => n.id === nodeId);
+  if (!node) return [];
+
+  const nodeLabel = _nodeLabel(node);
+  const result    = [];
+  const seen      = new Set();
+
+  // 1. Own type fields — always exposed regardless of incoming edges ──────────
+  const base  = _KIND_FIELDS[node.kind] ?? [];
+  const data  = node.data ?? {};
+  // Only include extra keys with a real (non-empty, non-nullish) value.
+  // _readForm() saves all form fields for every kind, so node.data accumulates
+  // empty strings / undefined for fields belonging to other node kinds — exclude them.
+  const extra = Object.keys(data).filter(
+    (k) => !k.startsWith('_') && k !== 'inputs' && k !== 'outputs' && !base.includes(k)
+         && data[k] !== undefined && data[k] !== null && data[k] !== ''
+  );
+  for (const field of [...base, ...extra]) {
+    const key = `${nodeId}:${field}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push({ field, targetField: field, sourceNodeId: nodeId, sourceNodeKind: node.kind, sourceNodeLabel: nodeLabel, chain: [nodeLabel] });
+    }
+  }
+
+  // 2. triggerName + selected fields forwarded from configured incoming edges ─
+  const inEdges = allEdges.filter((e) => e.toNodeId === nodeId);
+  for (const edge of inEdges) {
+    const fromNode  = allNodes.find((n) => n.id === edge.fromNodeId);
+    const fromLabel = _nodeLabel(fromNode);
+
+    // triggerName — forwarded as a synthetic 'triggerName' field
+    if (edge.meta?.triggerName) {
+      const key = `${edge.fromNodeId}:triggerName`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push({
+          field:           'triggerName',
+          targetField:     'triggerName',
+          sourceNodeId:    edge.fromNodeId,
+          sourceNodeKind:  fromNode?.kind ?? 'general',
+          sourceNodeLabel: fromLabel,
+          chain:           [fromLabel, nodeLabel],
+        });
+      }
+    }
+
+    // Only the explicitly enabled payload fields
+    const enabled = (edge.meta?.triggerPayload ?? []).filter((p) => p.enabled);
+    if (!enabled.length) continue;
+    const upstream = getAggregatedPayload(edge.fromNodeId, allNodes, allEdges, visited);
+    for (const p of enabled) {
+      const origin   = upstream.find((u) => u.field === p.field || u.targetField === p.field || u.field === p.targetField);
+      const srcId    = origin?.sourceNodeId    ?? edge.fromNodeId;
+      const srcKind  = origin?.sourceNodeKind  ?? (fromNode?.kind ?? 'general');
+      const srcLabel = origin?.sourceNodeLabel ?? fromLabel;
+      const upChain  = origin?.chain           ?? [fromLabel];
+      const fieldName = p.targetField ?? p.field;
+      const key = `${srcId}:${fieldName}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push({ field: fieldName, targetField: fieldName, sourceNodeId: srcId, sourceNodeKind: srcKind, sourceNodeLabel: srcLabel, chain: [...upChain, nodeLabel] });
+      }
+    }
+  }
+
+  return result;
+}
+
 // ── Render node ───────────────────────────────────────────────────────────────
 
 function _renderNode(node) {
@@ -447,7 +549,7 @@ function _renderAllEdges() {
     const badgeParts = [];
     if (edge.meta?.triggerName)  badgeParts.push(edge.meta.triggerName);
     else if (edge.meta?.label)   badgeParts.push(edge.meta.label);
-    const pCount = (edge.meta?.triggerPayload ?? []).length;
+    const pCount = (edge.meta?.triggerPayload ?? []).filter((p) => p.enabled).length;
     if (pCount > 0) badgeParts.push(`${pCount} field${pCount !== 1 ? 's' : ''}`);
 
     if (badgeParts.length) {
@@ -717,16 +819,6 @@ function _nodeBodyHtml(node) {
   return rows.map(([k, v]) =>
     `<span class="body-kv"><span class="body-key">${_esc(k)}</span><span class="body-val">${_esc(String(v))}</span></span>`
   ).join('');
-}
-
-function _nodeLabel(node) {
-  const d = node.data ?? {};
-  if (d.title)   return d.title;
-  if (d.ticker)  return d.ticker;
-  if (d.question) return d.question.slice(0, 25) + (d.question.length > 25 ? '…' : '');
-  if (d.ruleName) return d.ruleName;
-  if (d.category) return d.category;
-  return KIND_LABELS[node.kind] ?? node.kind;
 }
 
 function _notifyChange() {
