@@ -601,6 +601,25 @@ tbody td { padding: 10px 16px; font-size: 13px; color: var(--text-2); }
 .app-nav-btn:hover  { color: var(--text); }
 .app-nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+a.app-nav-btn {
+  display: flex; align-items: center;
+  text-decoration: none; line-height: 1;
+}
+.app-nav-link         { color: var(--text-3); }
+.app-nav-link:hover   { color: var(--text-2); }
+
+.nav-sep {
+  width: 1px; background: var(--border);
+  margin: 8px 12px; align-self: stretch;
+}
+
+.header-ext-link {
+  text-decoration: none;
+  font-size: 11px;
+  white-space: nowrap;
+  display: flex; align-items: center;
+}
+
 .app-page        { display: none; }
 .app-page.active { display: block; }
 #page-kg         { height: calc(100vh - var(--chrome-h, 110px)); overflow: hidden; }
