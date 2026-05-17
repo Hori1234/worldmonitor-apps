@@ -4,10 +4,13 @@
  */
 
 import { updateNodeData } from './canvas.js';
+import { getRules }       from './edge-rule-builder.js';
 
 let _activeNodeId      = null;
 let _onDeleteNode      = null;
 let _edgeApplyCallback = null;
+let _fromNode          = null; // source node for current edge modal
+let _toNode            = null; // target node for current edge modal
 
 // ── Node config modal ─────────────────────────────────────────────────────────
 
@@ -45,6 +48,23 @@ function _openNodeModal(node) {
     `${_kindIcon(node.kind)} Configure ${_kindLabel(node.kind)}`;
   document.getElementById('node-modal-body').innerHTML = _buildForm(node.kind, node.data ?? {});
   document.getElementById('node-config-modal').classList.remove('hidden');
+
+  // Wire the "assign rule" dropdown for edgeRule nodes
+  if (node.kind === 'edgeRule') {
+    document.getElementById('cfg-ruleAssign')?.addEventListener('change', (e) => {
+      const ruleId = e.target.value;
+      if (!ruleId) return;
+      const rule = getRules().find((r) => r.id === ruleId);
+      if (!rule) return;
+      const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
+      set('cfg-ruleName', rule.name);
+      set('cfg-icmType',  rule.trigger?.icmType ?? '');
+      set('cfg-count',    rule.trigger?.threshold?.count   ?? 1);
+      set('cfg-window',   rule.trigger?.threshold?.windowMs ?? 60000);
+      set('cfg-inputs',   rule.trigger?.inputs  ?? 1);
+      set('cfg-outputs',  rule.trigger?.outputs ?? 1);
+    });
+  }
 }
 
 function _closeNodeModal() {
@@ -69,43 +89,120 @@ export function initEdgeModal() {
   });
 }
 
-export function openEdgeModal(edge, onApply) {
+export function openEdgeModal(edge, nodes, onApply) {
   _edgeApplyCallback = onApply;
-  document.getElementById('edge-modal-body').innerHTML = _edgeForm(edge.meta ?? {});
+  _fromNode = nodes?.fromNode ?? null;
+  _toNode   = nodes?.toNode   ?? null;
+  document.getElementById('edge-modal-body').innerHTML = _edgeForm(edge.meta ?? {}, _fromNode, _toNode);
   document.getElementById('edge-config-modal').classList.remove('hidden');
 }
 
 function _closeEdgeModal() {
   _edgeApplyCallback = null;
+  _fromNode = null;
+  _toNode   = null;
   document.getElementById('edge-config-modal')?.classList.add('hidden');
 }
 
-function _edgeForm(meta) {
+function _edgeForm(meta, fromNode, toNode) {
   const actionOpts = ['', 'email', 'webhook', 'display']
     .map((v) => `<option value="${v}" ${v === (meta.action ?? '') ? 'selected' : ''}>${v || 'None'}</option>`)
     .join('');
+
+  // ── Trigger payload section ──────────────────────────────────────────────
+  const sourceFields    = _sourceFields(fromNode);
+  const existingPayload = meta.triggerPayload ?? [];
+
+  const payloadRows = sourceFields.map((field) => {
+    const ex      = existingPayload.find((p) => p.field === field);
+    const enabled = ex ? ex.enabled !== false : false;
+    const target  = ex?.targetField ?? field;
+    return `
+      <tr class="payload-row">
+        <td style="padding:3px 6px"><input type="checkbox" class="payload-check" data-field="${_esc(field)}" ${enabled ? 'checked' : ''} /></td>
+        <td style="padding:3px 4px;font-family:monospace;font-size:11px;color:var(--text)">${_esc(field)}</td>
+        <td style="padding:3px 2px;color:var(--text-3);font-size:11px">&rarr;</td>
+        <td style="padding:3px 4px"><input type="text" class="payload-target-field" value="${_esc(target)}" placeholder="${_esc(field)}" style="width:100%;font-size:11px;padding:2px 4px;background:var(--bg-2);border:1px solid var(--border);border-radius:3px;color:var(--text)"></td>
+      </tr>`;
+  }).join('');
+
+  const srcLabel = fromNode
+    ? `${KIND_ICONS[fromNode.kind] ?? '⬜'} ${_esc(fromNode.data?.title ?? fromNode.data?.ticker ?? fromNode.data?.ruleName ?? KIND_LABELS[fromNode.kind] ?? fromNode.kind)}`
+    : '(source)';
+  const tgtLabel = toNode
+    ? `${KIND_ICONS[toNode.kind] ?? '⬜'} ${_esc(toNode.data?.title ?? toNode.data?.ticker ?? toNode.data?.ruleName ?? KIND_LABELS[toNode.kind] ?? toNode.kind)}`
+    : '(target)';
+
+  const payloadSection = sourceFields.length
+    ? `<div class="form-group">
+        <label>Payload fields <span style="font-size:10px;font-weight:normal;color:var(--text-3)">(&#9745; = pass field through edge)</span></label>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="font-size:10px;color:var(--text-3)">
+            <th style="width:20px"></th>
+            <th style="text-align:left;padding:2px 4px">Source field</th>
+            <th style="width:18px"></th>
+            <th style="text-align:left;padding:2px 4px">Target alias</th>
+          </tr></thead>
+          <tbody id="payload-tbody">${payloadRows}</tbody>
+        </table>
+      </div>`
+    : '<p style="font-size:12px;color:var(--text-3)">No fields detected for source node.</p>';
+
   return `
-    ${_field('edge-label',        'Label',                meta.label        ?? '', 'text',   'placeholder="Connection name\u2026"')}
-    ${_field('edge-icmType',      'ICM Type filter',      meta.icmType      ?? '', 'text',   'placeholder="icm:market-update"')}
-    ${_field('edge-priority',     'Priority',             meta.priority     ?? 1,  'number')}
-    <div class="form-group">
-      <label>Action</label>
-      <select id="edge-action">${actionOpts}</select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start">
+
+      <!-- ── Left column: Connection ──────────────────────── -->
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="form-section-title">Connection</div>
+        ${_field('edge-label',        'Label',                      meta.label        ?? '', 'text',   'placeholder="Connection name\u2026"')}
+        ${_field('edge-icmType',      'ICM Type filter',            meta.icmType      ?? '', 'text',   'placeholder="icm:market-update"')}
+        ${_field('edge-priority',     'Priority',                   meta.priority     ?? 1,  'number')}
+        <div class="form-group">
+          <label>Action</label>
+          <select id="edge-action">${actionOpts}</select>
+        </div>
+        ${_field('edge-actionTarget', 'Action target (URL / email)', meta.actionTarget ?? '', 'text')}
+        ${_field('edge-notes',        'Notes',                      meta.notes        ?? '', 'text')}
+      </div>
+
+      <!-- ── Right column: Trigger Payload ────────────────── -->
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="form-section-title">Trigger Payload</div>
+        <p style="font-size:11px;color:var(--text-3);margin:0">${srcLabel} \u2192 ${tgtLabel}</p>
+        ${_field('edge-trigger-name', 'Trigger Name', meta.triggerName ?? '', 'text', 'placeholder="e.g. news-to-market"')}
+        ${payloadSection}
+      </div>
+
     </div>
-    ${_field('edge-actionTarget', 'Action target (URL / email)', meta.actionTarget ?? '', 'text')}
-    ${_field('edge-notes',        'Notes',                meta.notes        ?? '', 'text')}
   `;
 }
 
 function _readEdgeForm() {
   const v = (id) => document.getElementById(id)?.value ?? '';
+
+  // Collect checked payload fields
+  const triggerPayload = [];
+  document.querySelectorAll('#edge-modal-body .payload-row').forEach((row) => {
+    const check  = row.querySelector('.payload-check');
+    const target = row.querySelector('.payload-target-field');
+    if (check?.checked) {
+      triggerPayload.push({
+        field:       check.dataset.field,
+        targetField: target?.value.trim() || check.dataset.field,
+        enabled:     true,
+      });
+    }
+  });
+
   return {
-    label:        v('edge-label'),
-    icmType:      v('edge-icmType'),
-    priority:     parseInt(v('edge-priority'), 10) || 1,
-    action:       v('edge-action'),
-    actionTarget: v('edge-actionTarget'),
-    notes:        v('edge-notes'),
+    label:          v('edge-label'),
+    icmType:        v('edge-icmType'),
+    priority:       parseInt(v('edge-priority'), 10) || 1,
+    action:         v('edge-action'),
+    actionTarget:   v('edge-actionTarget'),
+    notes:          v('edge-notes'),
+    triggerName:    v('edge-trigger-name'),
+    triggerPayload,
   };
 }
 
@@ -123,7 +220,7 @@ function _buildForm(kind, data) {
     case 'polymarket': return ports + _polymarketForm(data);
     case 'map':        return ports + _mapForm(data);
     case 'general':    return ports + _generalForm(data);
-    case 'edgeRule':   return ports + _edgeRuleForm(data);
+    case 'edgeRule':   return ports + _edgeRuleForm(data, getRules());
     default:           return ports + '<p style="color:var(--text-3)">Unknown node kind.</p>';
   }
 }
@@ -197,10 +294,21 @@ function _generalForm(d) {
   `;
 }
 
-function _edgeRuleForm(d) {
+function _edgeRuleForm(d, rules = []) {
+  const ruleOpts = rules
+    .map((r) => `<option value="${_esc(r.id)}"${r.id === d._ruleId ? ' selected' : ''}>${_esc(r.name)} [${_esc(r.trigger?.icmType ?? '*')}]</option>`)
+    .join('');
   return `
-    ${_field('cfg-ruleName', 'Rule Name', d.ruleName, 'text')}
-    ${_field('cfg-icmType',  'ICM Type',  d.icmType,  'text', 'placeholder="icm:market-update"')}
+    <div class="form-group">
+      <label>Assign rule</label>
+      <select id="cfg-ruleAssign">
+        <option value="">${d._ruleId ? '(keep current)' : '(auto-create stub)'}</option>
+        ${ruleOpts}
+      </select>
+      <small style="color:var(--text-3);font-size:11px">Pick an existing rule to link, or leave blank to auto-create one.</small>
+    </div>
+    ${_field('cfg-ruleName', 'Rule Name', d.ruleName ?? '', 'text')}
+    ${_field('cfg-icmType',  'ICM Type',  d.icmType  ?? '', 'text', 'placeholder="icm:market-update"')}
     ${_field('cfg-count',    'Threshold count', d.count ?? 1, 'number')}
     ${_field('cfg-window',   'Window ms',       d.windowMs ?? 60000, 'number')}
   `;
@@ -211,6 +319,10 @@ function _edgeRuleForm(d) {
 function _readForm() {
   const get = (id) => document.getElementById(id);
   const v   = (id) => get(id)?.value ?? '';
+
+  // cfg-ruleAssign only exists for edgeRule nodes
+  const ruleAssignEl = get('cfg-ruleAssign');
+  const ruleAssign   = ruleAssignEl ? ruleAssignEl.value : null; // null = not an edgeRule form
 
   return {
     inputs:          parseInt(v('cfg-inputs'),  10) || 1,
@@ -237,6 +349,9 @@ function _readForm() {
     icmType:         v('cfg-icmType'),
     count:           parseInt(v('cfg-count'),  10) || 1,
     windowMs:        parseInt(v('cfg-window'), 10) || 60000,
+    // edgeRule assignment: link to existing rule OR request stub creation
+    ...(ruleAssign !== null && ruleAssign !== '' ? { _ruleId: ruleAssign, _createStub: false } : {}),
+    ...(ruleAssign === '' ? { _createStub: true } : {}),
     title:           v('cfg-title'),
     message:         v('cfg-message'),
   };
@@ -246,6 +361,24 @@ function _readForm() {
 
 const KIND_ICONS  = { market: '📈', news: '📰', polymarket: '🎯', map: '🗺', general: '⚙', edgeRule: '⚡' };
 const KIND_LABELS = { market: 'Market', news: 'News', polymarket: 'PolyMarket', map: 'Map', general: 'General', edgeRule: 'Edge Rule' };
+const KIND_FIELDS = {
+  market:      ['ticker', 'exchange', 'price', 'priceChangePct', 'title'],
+  news:        ['category', 'title', 'source', 'url'],
+  polymarket:  ['marketId', 'question', 'yesProbability', 'noProbability'],
+  map:         ['eventCategory', 'latitude', 'longitude', 'title', 'region'],
+  general:     ['template', 'title', 'message', 'channel', 'priority'],
+  edgeRule:    ['ruleName', 'icmType', 'count', 'windowMs'],
+};
+
+/** Returns all meaningful field names for a node (standard kind fields + any extra data fields). */
+function _sourceFields(node) {
+  if (!node) return [];
+  const base  = KIND_FIELDS[node.kind] ?? [];
+  const extra = Object.keys(node.data ?? {}).filter(
+    (k) => !k.startsWith('_') && k !== 'inputs' && k !== 'outputs' && !base.includes(k)
+  );
+  return [...base, ...extra];
+}
 
 function _kindIcon(k)  { return KIND_ICONS[k]  ?? '🔔'; }
 function _kindLabel(k) { return KIND_LABELS[k] ?? k; }

@@ -3,14 +3,14 @@
   "name": "Intel Notification",
   "description": "",
   "createdAt": "2026-05-17T17:00:39.630Z",
-  "updatedAt": "2026-05-17T18:24:44.404Z",
+  "updatedAt": "2026-05-17T20:49:48.247Z",
   "canvas": {
     "nodes": [
       {
         "id": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
         "kind": "market",
-        "x": 942,
-        "y": 230,
+        "x": 20.273612721420136,
+        "y": 533.8643297548755,
         "w": 415,
         "h": 231,
         "data": {
@@ -41,8 +41,8 @@
       {
         "id": "c695fd6a-1be8-4680-b517-7fa4545f7e37",
         "kind": "news",
-        "x": 129,
-        "y": 254,
+        "x": 65.6127883342312,
+        "y": 212.05258051530006,
         "w": 314,
         "h": 183,
         "data": {
@@ -71,12 +71,12 @@
       {
         "id": "d1063c22-0d38-4031-9d10-98665d8a1fa2",
         "kind": "edgeRule",
-        "x": 566,
-        "y": 166,
-        "w": 234,
-        "h": 144,
+        "x": 687.7942224011422,
+        "y": 222.6127883342312,
+        "w": 252,
+        "h": 148,
         "data": {
-          "inputs": 1,
+          "inputs": 2,
           "outputs": 1,
           "_ruleId": "f94ea6e8-17ff-47f1-a7c3-03d191f17966",
           "ticker": "",
@@ -92,11 +92,74 @@
           "channel": "",
           "priority": 3,
           "ruleName": "Test Rule",
-          "icmType": "icm:market-update",
+          "icmType": "icm:general",
           "count": 1,
           "windowMs": 60000,
           "title": "",
           "message": ""
+        }
+      },
+      {
+        "id": "ed498404-7998-4a1f-98a3-1212b95c212a",
+        "kind": "edgeRule",
+        "x": 684.4812941868704,
+        "y": 445.8422452686133,
+        "w": 268.55566335658875,
+        "h": 182.03050921452433,
+        "data": {
+          "inputs": 2,
+          "outputs": 1,
+          "_ruleId": "e0547d6d-2eee-4cdf-93bb-10c589a01af2",
+          "ticker": "",
+          "exchange": "",
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "Test 2",
+          "icmType": "*",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "",
+          "message": ""
+        }
+      },
+      {
+        "id": "e6e7dde1-2706-4e0c-a78a-0d8c8f05bd37",
+        "kind": "edgeRule",
+        "x": 726.4287136715704,
+        "y": 708.7127407060663,
+        "w": 325.41772088029313,
+        "h": 157.79422240114212,
+        "data": {
+          "inputs": 3,
+          "outputs": 2,
+          "ticker": "",
+          "exchange": "",
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "Triple output rule",
+          "icmType": "icm:market-update",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "",
+          "message": "",
+          "_createStub": true,
+          "_ruleId": "25a5e9a3-ab16-4a49-9ae1-acc3a4e575be"
         }
       }
     ],
@@ -113,29 +176,65 @@
           "priority": 1,
           "action": "webhook",
           "actionTarget": "Ticker",
-          "notes": "Intel stock has changes"
+          "notes": "Intel stock has changes",
+          "triggerName": "news-category-trigger",
+          "triggerPayload": [
+            {
+              "field": "category",
+              "targetField": "category",
+              "enabled": true
+            },
+            {
+              "field": "title",
+              "targetField": "title",
+              "enabled": true
+            }
+          ]
         }
       },
       {
-        "id": "8d520601-37bb-473f-8774-c2803c869bd5",
-        "fromNodeId": "d1063c22-0d38-4031-9d10-98665d8a1fa2",
+        "id": "adac0189-1fc9-4132-b037-780e2910ea98",
+        "fromNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
         "fromPortIdx": 0,
-        "toNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
-        "toPortIdx": 0,
+        "toNodeId": "d1063c22-0d38-4031-9d10-98665d8a1fa2",
+        "toPortIdx": 1,
         "meta": {
           "label": "Stock Update",
           "icmType": "icm:market-node",
           "priority": 1,
-          "action": "webhook",
+          "action": "display",
           "actionTarget": "Ticker",
           "notes": "Intel stock has changes"
         }
+      },
+      {
+        "id": "7570351e-7ffe-41a4-a06d-4a9910957596",
+        "fromNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+        "fromPortIdx": 0,
+        "toNodeId": "ed498404-7998-4a1f-98a3-1212b95c212a",
+        "toPortIdx": 1,
+        "meta": {
+          "label": "Stock Update",
+          "icmType": "icm:market-node",
+          "priority": 1,
+          "action": "",
+          "actionTarget": "Ticker",
+          "notes": "Intel stock has changes"
+        }
+      },
+      {
+        "id": "c111da6b-8cc1-41ce-94f5-0b4cbfa4bb47",
+        "fromNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+        "fromPortIdx": 0,
+        "toNodeId": "e6e7dde1-2706-4e0c-a78a-0d8c8f05bd37",
+        "toPortIdx": 0,
+        "meta": {}
       }
     ],
     "viewport": {
-      "x": 0,
-      "y": 0,
-      "zoom": 1
+      "x": 77.7079120291562,
+      "y": 49.71310455925868,
+      "zoom": 1.0727715924554901
     },
     "profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
   }

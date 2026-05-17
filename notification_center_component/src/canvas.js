@@ -31,6 +31,7 @@ let edges         = [];   // { id, fromNodeId, fromPortIdx, toNodeId, toPortIdx,
 let viewport      = { x: 0, y: 0, zoom: 1 };
 let _onNodeOpen   = null; // callback(node)
 let _onEdgeCreate = null; // callback(edge) after a connection is made
+let _onEdgeEdit   = null; // callback(edgeId) to re-open edge config modal
 let _containerEl  = null; // cached container element
 
 // pending edge drag
@@ -40,9 +41,10 @@ let _activeEdgeInfo = null; // { edgeId, nodeEl, lineEl, _cleanup }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-export function initCanvas({ onNodeOpen, onDelete, onEdgeCreate } = {}) {
+export function initCanvas({ onNodeOpen, onDelete, onEdgeCreate, onEdgeEdit } = {}) {
   _onNodeOpen   = onNodeOpen;
   _onEdgeCreate = onEdgeCreate;
+  _onEdgeEdit   = onEdgeEdit;
 
   const container = document.getElementById('canvas-container');
   const world     = document.getElementById('canvas-world');
@@ -416,7 +418,7 @@ function _cancelPendingEdge() {
 function _clearEdgesSVG() {
   const svg = document.getElementById('canvas-svg');
   if (!svg) return;
-  svg.querySelectorAll('.canvas-edge, .canvas-edge-label').forEach((el) => el.remove());
+  svg.querySelectorAll('.canvas-edge, .canvas-edge-label, .canvas-edge-badge').forEach((el) => el.remove());
 }
 
 function _renderAllEdges() {
@@ -441,17 +443,38 @@ function _renderAllEdges() {
     });
     svg.appendChild(path);
 
-    // Edge label
-    if (edge.meta?.label) {
-      const mx   = (from.x + to.x) / 2;
-      const my   = (from.y + to.y) / 2;
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('class', 'canvas-edge-label');
-      text.setAttribute('x', mx);
-      text.setAttribute('y', my - 6);
-      text.setAttribute('text-anchor', 'middle');
-      text.textContent = edge.meta.label;
-      svg.appendChild(text);
+    // Edge badge: trigger name · payload field count · or plain label
+    const badgeParts = [];
+    if (edge.meta?.triggerName)  badgeParts.push(edge.meta.triggerName);
+    else if (edge.meta?.label)   badgeParts.push(edge.meta.label);
+    const pCount = (edge.meta?.triggerPayload ?? []).length;
+    if (pCount > 0) badgeParts.push(`${pCount} field${pCount !== 1 ? 's' : ''}`);
+
+    if (badgeParts.length) {
+      const mx       = (from.x + to.x) / 2;
+      const my       = (from.y + to.y) / 2;
+      const badgeStr = badgeParts.join(' · ');
+      const w        = Math.max(70, badgeStr.length * 6.5 + 24);
+      const h        = 18;
+
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'canvas-edge-badge');
+
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x',      String(mx - w / 2));
+      rect.setAttribute('y',      String(my - h / 2));
+      rect.setAttribute('width',  String(w));
+      rect.setAttribute('height', String(h));
+      rect.setAttribute('rx',     '4');
+      g.appendChild(rect);
+
+      const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      textEl.setAttribute('x',           String(mx));
+      textEl.setAttribute('y',           String(my + 5));
+      textEl.setAttribute('text-anchor', 'middle');
+      textEl.textContent = badgeStr;
+      g.appendChild(textEl);
+      svg.appendChild(g);
     }
   }
   _updateEdgeInfoConnector();
@@ -472,14 +495,31 @@ function _openEdgeInfoNode(edge) {
   const svg   = document.getElementById('canvas-svg');
   if (!world || !svg) return;
 
-  const meta     = edge.meta ?? {};
-  const metaKeys = Object.keys(meta).filter((k) => meta[k] !== undefined && meta[k] !== '');
-  const label    = meta.label || 'Edge';
-  const bodyHtml = metaKeys.length
-    ? metaKeys.map((k) =>
-        `<span class="body-kv"><span class="body-key">${_esc(k)}</span><span class="body-val">${_esc(String(meta[k]))}</span></span>`
-      ).join('')
-    : '<span class="body-hint">No metadata — click ⚙ on the node to configure</span>';
+  const meta  = edge.meta ?? {};
+  const label  = meta.label || meta.triggerName || 'Edge';
+
+  // Regular KV rows — skip triggerPayload (shown as JSON below)
+  const SKIP = new Set(['triggerPayload']);
+  const metaKeys = Object.keys(meta).filter(
+    (k) => !SKIP.has(k) && meta[k] !== undefined && meta[k] !== '' && !Array.isArray(meta[k])
+  );
+  let bodyHtml = metaKeys.map((k) =>
+    `<span class="body-kv"><span class="body-key">${_esc(k)}</span><span class="body-val">${_esc(String(meta[k]))}</span></span>`
+  ).join('');
+
+  // Trigger payload JSON preview
+  const payload = meta.triggerPayload ?? [];
+  if (meta.triggerName || payload.length) {
+    const payloadObj = {};
+    payload.forEach((p) => { payloadObj[p.targetField || p.field] = `<${p.field}>`; });
+    const jsonStr = JSON.stringify(
+      { triggerName: meta.triggerName || undefined, payload: payloadObj },
+      null, 2
+    );
+    bodyHtml += `<pre class="body-json">${_esc(jsonStr)}</pre>`;
+  }
+
+  if (!bodyHtml) bodyHtml = '<span class="body-hint">Click ✏ to configure</span>';
 
   const nodeX = mid.x + 50;
   const nodeY = mid.y - 140;
@@ -493,7 +533,8 @@ function _openEdgeInfoNode(edge) {
     <div class="node-header">
       <span class="node-kind-icon">🔗</span>
       <span class="node-title">${_esc(label)}</span>
-      <button class="edge-info-pin-btn" title="Pin to canvas">📌</button>
+      <button class="edge-info-pin-btn"  title="Pin to canvas">📌</button>
+      <button class="edge-info-edit-btn" title="Edit edge config">✏</button>
       <button class="edge-info-save-btn" title="Close">✓</button>
       <button class="edge-info-delete-btn" title="Delete edge">🗑</button>
     </div>
@@ -505,8 +546,16 @@ function _openEdgeInfoNode(edge) {
     _activeEdgeInfo.pinned = !_activeEdgeInfo.pinned;
     const isPinned = _activeEdgeInfo.pinned;
     nodeEl.querySelector('.edge-info-pin-btn').classList.toggle('pinned', isPinned);
+    nodeEl.querySelector('.edge-info-edit-btn').style.display   = isPinned ? 'none' : '';
     nodeEl.querySelector('.edge-info-save-btn').style.display   = isPinned ? 'none' : '';
     nodeEl.querySelector('.edge-info-delete-btn').style.display = isPinned ? 'none' : '';
+  });
+
+  nodeEl.querySelector('.edge-info-edit-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const edgeToEdit = edges.find((ed) => ed.id === edge.id);
+    _closeEdgeInfoNode();
+    if (edgeToEdit) _onEdgeEdit?.(edgeToEdit.id);
   });
 
   nodeEl.querySelector('.edge-info-save-btn').addEventListener('click', (e) => {

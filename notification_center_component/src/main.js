@@ -135,7 +135,20 @@ function init() {
   initCanvas({
     onNodeOpen:   (node) => openFlyout(node),
     onDelete:     () => {},
-    onEdgeCreate: (edge) => openEdgeModal(edge, (meta) => updateEdgeMeta(edge.id, meta)),
+    onEdgeCreate: (edge) => {
+      const state    = getCanvasState();
+      const fromNode = state.nodes.find((n) => n.id === edge.fromNodeId);
+      const toNode   = state.nodes.find((n) => n.id === edge.toNodeId);
+      openEdgeModal(edge, { fromNode, toNode }, (meta) => updateEdgeMeta(edge.id, meta));
+    },
+    onEdgeEdit: (edgeId) => {
+      const state    = getCanvasState();
+      const edge     = state.edges.find((e) => e.id === edgeId);
+      if (!edge) return;
+      const fromNode = state.nodes.find((n) => n.id === edge.fromNodeId);
+      const toNode   = state.nodes.find((n) => n.id === edge.toNodeId);
+      openEdgeModal(edge, { fromNode, toNode }, (meta) => updateEdgeMeta(edgeId, meta));
+    },
   });
 
   initNodeConfig({
@@ -176,6 +189,23 @@ function init() {
   // Navigate to edge rule tab from canvas jump button
   document.addEventListener('nc:canvas:navigateToRule', (e) => {
     navigateToRule(e.detail?.ruleId ?? null);
+  });
+
+  // Patch canvas node when its linked rule is saved in the Edge Rules Editor
+  document.addEventListener('nc:rules:ruleUpdated', (e) => {
+    const rule = e.detail?.rule;
+    if (!rule) return;
+    const state = getCanvasState();
+    const node  = state.nodes.find((n) => n.kind === 'edgeRule' && n.data._ruleId === rule.id);
+    if (!node) return;
+    const patch = {};
+    if (rule.name)                                   patch.ruleName = rule.name;
+    if (rule.trigger?.icmType)                       patch.icmType  = rule.trigger.icmType;
+    if (rule.trigger?.threshold?.count  != null)     patch.count    = rule.trigger.threshold.count;
+    if (rule.trigger?.threshold?.windowMs != null)   patch.windowMs = rule.trigger.threshold.windowMs;
+    if (rule.trigger?.inputs  != null)               patch.inputs   = rule.trigger.inputs;
+    if (rule.trigger?.outputs != null)               patch.outputs  = rule.trigger.outputs;
+    updateNodeData(node.id, patch);
   });
 }
 

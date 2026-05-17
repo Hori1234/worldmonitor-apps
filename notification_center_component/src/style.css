@@ -224,8 +224,11 @@ button.accent:hover { background: #33dd77; }
 }
 .node-resize-handle:hover { background: linear-gradient(135deg, transparent 50%, var(--accent) 50%); }
 
-/* Edge label */
+/* Edge label (kept for fallback) */
 .canvas-edge-label { font-size: 10px; fill: var(--text-3); pointer-events: none; }
+/* Edge badge (trigger name + payload count pill) */
+.canvas-edge-badge rect { fill: color-mix(in srgb, var(--bg-3) 92%, transparent); stroke: var(--border-2); stroke-width: 1; }
+.canvas-edge-badge text { fill: var(--text); font-size: 10px; font-family: monospace; pointer-events: none; }
 
 /* Edge (SVG) */
 .canvas-edge { fill: none; stroke: var(--border-2); stroke-width: 1.5; pointer-events: all; cursor: pointer; }
@@ -253,6 +256,18 @@ button.accent:hover { background: #33dd77; }
 }
 .edge-info-pin-btn:hover { background: var(--bg-hover); color: var(--text); }
 .edge-info-pin-btn.pinned { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.edge-info-edit-btn {
+  font-size: 11px; padding: 1px 5px; border: 1px solid var(--border); border-radius: 3px;
+  cursor: pointer; background: transparent; color: var(--text-2); line-height: 1;
+  flex-shrink: 0; margin-right: 2px; transition: background .12s, color .12s;
+}
+.edge-info-edit-btn:hover { background: var(--bg-hover); color: var(--text); }
+/* JSON payload preview inside edge info node */
+.body-json {
+  font-size: 10px; font-family: monospace; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 3px; padding: 4px 6px; margin: 4px 0 0; white-space: pre-wrap;
+  word-break: break-all; color: var(--accent); max-height: 120px; overflow-y: auto;
+}
 
 /* Modal overlay (center-screen) */
 .modal-overlay {
@@ -262,9 +277,9 @@ button.accent:hover { background: #33dd77; }
 .modal-overlay.hidden { display: none; }
 .modal {
   background: var(--bg-2); border: 1px solid var(--border);
-  border-radius: var(--radius); width: 360px; display: flex; flex-direction: column;
+  border-radius: var(--radius); width: 360px; display: flex; flex-direction: column; box-sizing: border-box;
 }
-.modal-wide { width: 480px; max-width: 90vw; max-height: 85vh; overflow-y: auto; }
+.modal-wide { width: 940px; max-width: 96vw; max-height: 88vh; overflow-x: hidden; overflow-y: auto; }
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600;

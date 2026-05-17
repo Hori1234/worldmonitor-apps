@@ -26,6 +26,8 @@ const fDesc    = () => document.getElementById('rule-desc');
 const fIcm     = () => document.getElementById('rule-icm-type');
 const fCount   = () => document.getElementById('rule-count');
 const fWindow  = () => document.getElementById('rule-window');
+const fInputs  = () => document.getElementById('rule-inputs');
+const fOutputs = () => document.getElementById('rule-outputs');
 const fFField  = () => document.getElementById('rule-filter-field');
 const fFOp     = () => document.getElementById('rule-filter-op');
 const fFVal    = () => document.getElementById('rule-filter-value');
@@ -126,6 +128,8 @@ function _populateForm(rule) {
   fIcm().value    = rule.trigger?.icmType ?? '*';
   fCount().value  = rule.trigger?.threshold?.count   ?? 1;
   fWindow().value = rule.trigger?.threshold?.windowMs ?? 60000;
+  fInputs()  && (fInputs().value  = rule.trigger?.inputs  ?? 1);
+  fOutputs() && (fOutputs().value = rule.trigger?.outputs ?? 1);
   fFField().value = rule.trigger?.filter?.field    ?? '';
   fFOp().value    = rule.trigger?.filter?.operator ?? '';
   fFVal().value   = rule.trigger?.filter?.value    ?? '';
@@ -186,6 +190,8 @@ function _readForm() {
     trigger: {
       icmType:  fIcm()?.value ?? '*',
       filter,
+      inputs:   parseInt(fInputs()?.value  ?? '1', 10),
+      outputs:  parseInt(fOutputs()?.value ?? '1', 10),
       threshold: {
         count:    parseInt(fCount()?.value  ?? '1',     10),
         windowMs: parseInt(fWindow()?.value ?? '60000', 10),
@@ -208,12 +214,14 @@ async function _onSubmit(e) {
       const idx = _rules.findIndex((r) => r.id === _activeRuleId);
       if (idx !== -1) _rules[idx] = res.rule;
       toast('Rule updated', 'success');
+      document.dispatchEvent(new CustomEvent('nc:rules:ruleUpdated', { detail: { rule: res.rule } }));
     } else {
       const res = await api.createRule(data);
       if (!res.ok) throw new Error(res.error);
       _rules.push(res.rule);
       _activeRuleId = res.rule.id;
       toast('Rule created', 'success');
+      document.dispatchEvent(new CustomEvent('nc:rules:ruleUpdated', { detail: { rule: res.rule } }));
     }
     _renderList();
   } catch (err) {
@@ -270,47 +278,106 @@ function _esc(str) {
 // ── Canvas integration ─────────────────────────────────────────────────────────
 
 /**
- * Called from canvas when an edgeRule node is added or loaded.
- * Creates a stub rule in the service if none exists yet for this node.
- * Returns the ruleId to store back in node.data._ruleId.
+ * Called from canvas when an edgeRule node is synced.
+ * If the node already has a _ruleId, pushes any changed data to the service.
+ * Does NOT auto-create a rule — the user must assign one via the config modal.
+ * Returns the ruleId (unchanged) or null if unlinked.
  */
 export async function syncEdgeRuleNode(nodeId, nodeData) {
-  // Already linked — ensure it's in the local list
-  if (nodeData._ruleId) {
-    if (!_rules.find((r) => r.id === nodeData._ruleId)) {
-      try {
-        const res = await api.listRules();
-        _rules = res.rules ?? [];
+  // Unlinked — only create a stub when the user explicitly chose "(auto-create stub)"
+  if (!nodeData._ruleId) {
+    if (!nodeData._createStub) return null;
+
+    const stubData = {
+      name:        nodeData.ruleName || 'Edge Rule (Canvas)',
+      description: 'Created from canvas builder.',
+      trigger: {
+        icmType:  nodeData.icmType || '*',
+        inputs:   nodeData.inputs  != null ? Number(nodeData.inputs)  : 1,
+        outputs:  nodeData.outputs != null ? Number(nodeData.outputs) : 1,
+        threshold: {
+          count:          nodeData.count    ? Number(nodeData.count)    : 1,
+          windowMs:       nodeData.windowMs ? Number(nodeData.windowMs) : 60000,
+          resetAfterFire: true,
+        },
+      },
+      actions: [],
+    };
+    try {
+      const res = await api.createRule(stubData);
+      if (res.ok) {
+        _rules.push(res.rule);
         _renderList();
-      } catch { /* offline */ }
-    }
-    return nodeData._ruleId;
+        return res.rule.id; // main.js will write _ruleId back to the node
+      }
+    } catch { /* service offline — will retry on next save */ }
+    return null;
   }
 
-  // Create a stub rule
-  const stubData = {
-    name:        nodeData.ruleName || 'Edge Rule (Canvas)',
-    description: 'Created from canvas builder.',
-    trigger: {
-      icmType:  nodeData.icmType || '*',
-      threshold: {
-        count:    nodeData.count    ? Number(nodeData.count)    : 1,
-        windowMs: nodeData.windowMs ? Number(nodeData.windowMs) : 60000,
-        resetAfterFire: true,
-      },
-    },
-    actions: [],
-  };
-
-  try {
-    const res = await api.createRule(stubData);
-    if (res.ok) {
-      _rules.push(res.rule);
+  let rule = _rules.find((r) => r.id === nodeData._ruleId);
+  if (!rule) {
+    try {
+      const res = await api.listRules();
+      _rules = res.rules ?? [];
       _renderList();
-      return res.rule.id;
+      rule = _rules.find((r) => r.id === nodeData._ruleId);
+    } catch { /* offline */ }
+  }
+
+  // Push canvas node data → rule if anything changed
+  if (rule) {
+    const desiredName    = nodeData.ruleName  || rule.name;
+    const desiredIcm     = nodeData.icmType   || rule.trigger?.icmType || '*';
+    const desiredCount   = nodeData.count   != null ? Number(nodeData.count)   : (rule.trigger?.threshold?.count   ?? 1);
+    const desiredWindow  = nodeData.windowMs != null ? Number(nodeData.windowMs) : (rule.trigger?.threshold?.windowMs ?? 60000);
+    const desiredInputs  = nodeData.inputs  != null ? Number(nodeData.inputs)  : (rule.trigger?.inputs  ?? 1);
+    const desiredOutputs = nodeData.outputs != null ? Number(nodeData.outputs) : (rule.trigger?.outputs ?? 1);
+
+    const changed =
+      desiredName    !== rule.name ||
+      desiredIcm     !== rule.trigger?.icmType ||
+      desiredCount   !== rule.trigger?.threshold?.count ||
+      desiredWindow  !== rule.trigger?.threshold?.windowMs ||
+      desiredInputs  !== (rule.trigger?.inputs  ?? 1) ||
+      desiredOutputs !== (rule.trigger?.outputs ?? 1);
+
+    if (changed) {
+      try {
+        const patch = {
+          name: desiredName,
+          trigger: {
+            ...(rule.trigger ?? {}),
+            icmType: desiredIcm,
+            inputs:  desiredInputs,
+            outputs: desiredOutputs,
+            threshold: {
+              ...(rule.trigger?.threshold ?? {}),
+              count:          desiredCount,
+              windowMs:       desiredWindow,
+              resetAfterFire: true,
+            },
+          },
+        };
+        const res = await api.updateRule(nodeData._ruleId, patch);
+        if (res.ok) {
+          const idx = _rules.findIndex((r) => r.id === nodeData._ruleId);
+          if (idx !== -1) _rules[idx] = res.rule;
+          _renderList();
+          // Refresh form if this rule is currently open
+          if (_activeRuleId === nodeData._ruleId) _populateForm(res.rule);
+        }
+      } catch { /* service offline */ }
     }
-  } catch { /* service offline */ }
-  return null;
+  }
+  return nodeData._ruleId;
+}
+
+/**
+ * Returns a shallow copy of the current rules list.
+ * Used by node-config.js to populate the "assign rule" dropdown.
+ */
+export function getRules() {
+  return [..._rules];
 }
 
 /**

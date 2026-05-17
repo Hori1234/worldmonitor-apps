@@ -1,0 +1,18 @@
+{
+  "id": "25a5e9a3-ab16-4a49-9ae1-acc3a4e575be",
+  "name": "Triple output rule",
+  "enabled": true,
+  "description": "Created from canvas builder.",
+  "trigger": {
+    "icmType": "icm:market-update",
+    "filter": null,
+    "threshold": {
+      "count": 1,
+      "windowMs": 60000,
+      "resetAfterFire": true
+    }
+  },
+  "actions": [],
+  "createdAt": "2026-05-17T20:32:59.417Z",
+  "updatedAt": "2026-05-17T20:55:09.636Z"
+}
