@@ -5,7 +5,7 @@
 import './style.css';
 import { initNotifications }    from './notifications.js';
 import { initProfileSelector, getCurrentProfileId } from './profile-selector.js';
-import { initCanvas, loadCanvasState, getCanvasState, clearCanvas, removeNode, updateEdgeMeta, updateNodeData, getAggregatedPayload } from './canvas.js';
+import { initCanvas, loadCanvasState, getCanvasState, clearCanvas, removeNode, updateEdgeMeta, updateNodeData, getAggregatedPayload, triggerTestNodes } from './canvas.js';
 import { initNodePalette }      from './node-palette.js';
 import { initNodeConfig, openFlyout, initEdgeModal, openEdgeModal } from './node-config.js';
 import { initObjectsBrowser }   from './objects-browser.js';
@@ -164,13 +164,17 @@ function init() {
     await _loadCanvas(profileId);
   });
 
-  // Canvas save / clear buttons
+  // Canvas save / clear / test-trigger buttons
   document.getElementById('canvas-save-btn')?.addEventListener('click', async () => {
     await _saveCanvas(getCurrentProfileId());
   });
 
   document.getElementById('canvas-clear-btn')?.addEventListener('click', () => {
     if (confirm('Clear canvas?')) clearCanvas();
+  });
+
+  document.getElementById('canvas-test-trigger-btn')?.addEventListener('click', () => {
+    triggerTestNodes();
   });
 
   // WebSocket

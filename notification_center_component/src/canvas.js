@@ -10,7 +10,10 @@
  *   loadCanvasState(state)
  *   getCanvasState()            → { nodes[], edges[], viewport }
  *   clearCanvas()
+ *   triggerTestNodes()          fire all Test-Mode nodes + propagate through edges
  */
+
+import { toast } from './toast.js';
 
 const KIND_ICONS  = { market: '📈', news: '📰', polymarket: '🎯', map: '🗺', general: '⚙', edgeRule: '⚡' };
 const KIND_LABELS = { market: 'Market', news: 'News', polymarket: 'PolyMarket', map: 'Map', general: 'General', edgeRule: 'Edge Rule' };
@@ -29,6 +32,17 @@ const OUTPUT_PORT_COLOR = '#ff4444';
 let nodes         = [];   // { id, kind, x, y, w, h, data }
 let edges         = [];   // { id, fromNodeId, fromPortIdx, toNodeId, toPortIdx, meta }
 let viewport      = { x: 0, y: 0, zoom: 1 };
+
+// Live test state — cleared on every new test run, never persisted
+// nodeId → { payload: {}, edgeStates: [{edgeId, toNodeId, toNodeLabel, pass, conditions}], firedEdges: Set }
+const _testLiveData    = new Map();
+const _testDisplayTimers = new Map(); // per-node debounce timers for live display
+
+// Persistent payload cache — accumulated incoming payloads survive page reloads
+// nodeId → { payload: {}, updatedAt: ISO string }
+const _payloadCache = new Map();
+let _payloadCacheSaveTimer = null;
+const _PAYLOAD_CACHE_KEY = 'nc:canvas:payload-cache';
 let _onNodeOpen   = null; // callback(node)
 let _onEdgeCreate = null; // callback(edge) after a connection is made
 let _onEdgeEdit   = null; // callback(edgeId) to re-open edge config modal
@@ -139,6 +153,12 @@ export function updateNodeData(id, data) {
     if (titleEl) titleEl.textContent = _esc(_nodeLabel(node));
     const bodyEl  = el.querySelector('.node-body');
     if (bodyEl)  bodyEl.innerHTML = _nodeBodyHtml(node);
+    const footerEl = el.querySelector('.node-footer');
+    if (footerEl) { footerEl.innerHTML = _nodeFooterHtml(node); _wireFooter(el); }
+    // Sync height based on test mode
+    if (node.kind !== 'edgeRule') {
+      el.style.height = node.data._testMode ? '' : `${node.h}px`;
+    }
     if (needPortUpdate) { _renderPorts(el, node); _renderAllEdges(); }
   }
   _notifyChange();
@@ -156,12 +176,15 @@ export function removeNode(id) {
   nodes = nodes.filter((n) => n.id !== id);
   edges = edges.filter((e) => e.fromNodeId !== id && e.toNodeId !== id);
   document.querySelector(`.canvas-node[data-id="${id}"]`)?.remove();
+  _payloadCache.delete(id);
+  _savePayloadCache();
   _renderAllEdges();
   _notifyChange();
 }
 
 export function loadCanvasState(state) {
   clearCanvas();
+  _loadPayloadCache(); // restore accumulated payload state from previous session
   viewport = state.viewport ?? { x: 0, y: 0, zoom: 1 };
   (state.nodes ?? []).forEach((n) => {
     n.w = n.w ?? 180; n.h = n.h ?? 100;
@@ -173,6 +196,8 @@ export function loadCanvasState(state) {
   (state.edges ?? []).forEach((e) => { edges.push(e); });
   _renderAllEdges();
   _applyTransform();
+  // Show cached payload overlays on nodes that have accumulated data from prior runs
+  nodes.forEach((n) => _updateNodeLiveDisplay(n.id));
 }
 
 export function getCanvasState() {
@@ -304,7 +329,11 @@ function _renderNode(node) {
   const el = document.createElement('div');
   el.className = `canvas-node kind-${node.kind}`;
   el.dataset.id = node.id;
-  el.style.cssText = `left:${node.x}px;top:${node.y}px;width:${node.w}px;height:${node.h}px;--kind-color:${kindColor};`;
+  el.style.cssText = `left:${node.x}px;top:${node.y}px;width:${node.w}px;min-height:${node.h}px;--kind-color:${kindColor};`;
+  // Lock to explicit height unless in test mode (test mode lets content flow freely)
+  if (!(node.kind !== 'edgeRule' && node.data._testMode)) {
+    el.style.height = `${node.h}px`;
+  }
 
   el.innerHTML = `
     <div class="node-header">
@@ -315,13 +344,15 @@ function _renderNode(node) {
       <button class="node-menu-btn" title="Configure">⚙</button>
     </div>
     <div class="node-body">${_nodeBodyHtml(node)}</div>
+    <div class="node-live-overlay hidden"></div>
+    ${node.kind !== 'edgeRule' ? `<div class="node-footer">${_nodeFooterHtml(node)}</div>` : ''}
     <div class="node-resize-handle" title="Resize"></div>
   `;
 
   // Test button
   el.querySelector('.node-test-btn')?.addEventListener('click', (e) => {
     e.stopPropagation();
-    _triggerTest(node.id);
+    _triggerTestSingle(node.id);
   });
 
   // Config button → open modal
@@ -342,6 +373,7 @@ function _renderNode(node) {
   _makeDraggable(el, node);
   _makeResizable(el, node);
   _renderPorts(el, node);
+  _wireFooter(el);
 
   world.appendChild(el);
 }
@@ -391,9 +423,12 @@ function _renderPorts(el, node) {
 function _portWorldPos(nodeId, direction, portIdx) {
   const node  = nodes.find((n) => n.id === nodeId);
   if (!node) return null;
+  // Use actual DOM height so ports track the node even when test mode expands it
+  const domEl = document.querySelector(`.canvas-node[data-id="${nodeId}"]`);
+  const h     = domEl ? domEl.offsetHeight : (node.h ?? 100);
   const count = direction === 'in' ? (node.data.inputs ?? 1) : (node.data.outputs ?? 1);
   const x = direction === 'in' ? node.x : node.x + (node.w ?? 180);
-  const y = node.y + ((portIdx + 1) / (count + 1)) * (node.h ?? 100);
+  const y = node.y + ((portIdx + 1) / (count + 1)) * h;
   return { x, y };
 }
 
@@ -438,7 +473,9 @@ function _makeResizable(el, node) {
   handle.addEventListener('mousedown', (e) => {
     e.stopPropagation(); e.preventDefault();
     const startX = e.clientX, startY = e.clientY;
-    const startW = node.w,    startH = node.h;
+    const startW = node.w;
+    // Use actual DOM height so resize works correctly whether or not test mode is active
+    const startH = el.offsetHeight;
 
     const onMove = (e) => {
       node.w = Math.max(150, startW + (e.clientX - startX) / viewport.zoom);
@@ -520,7 +557,7 @@ function _cancelPendingEdge() {
 function _clearEdgesSVG() {
   const svg = document.getElementById('canvas-svg');
   if (!svg) return;
-  svg.querySelectorAll('.canvas-edge, .canvas-edge-label, .canvas-edge-badge').forEach((el) => el.remove());
+  svg.querySelectorAll('.canvas-edge, .canvas-edge-hit, .canvas-edge-label, .canvas-edge-badge').forEach((el) => el.remove());
 }
 
 function _renderAllEdges() {
@@ -534,9 +571,19 @@ function _renderAllEdges() {
     if (!from || !to) continue;
 
     const dx   = Math.abs(to.x - from.x) * 0.5;
+    const dStr = `M${from.x},${from.y} C${from.x + dx},${from.y} ${to.x - dx},${to.y} ${to.x},${to.y}`;
+
+    // Invisible wide hit-area path so edges are easy to click
+    const hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    hitPath.setAttribute('class', 'canvas-edge-hit');
+    hitPath.setAttribute('d', dStr);
+    hitPath.dataset.edgeId = edge.id;
+    hitPath.addEventListener('click', (e) => { e.stopPropagation(); _openEdgeInfoNode(edge); });
+    svg.appendChild(hitPath);
+
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('class', 'canvas-edge');
-    path.setAttribute('d', `M${from.x},${from.y} C${from.x + dx},${from.y} ${to.x - dx},${to.y} ${to.x},${to.y}`);
+    path.setAttribute('d', dStr);
     path.dataset.edgeId = edge.id;
 
     path.addEventListener('click', (e) => {
@@ -757,19 +804,26 @@ function _applyTransform() {
 }
 
 /** Fire a one-shot test event for this node and show a visual pulse. */
-function _triggerTest(nodeId) {
+/**
+ * Fire a test signal from a single node and propagate through all downstream edges.
+ * Behaves identically to the global Test Triggers button but scoped to one node.
+ */
+function _triggerTestSingle(nodeId) {
   const node = nodes.find((n) => n.id === nodeId);
-  if (!node) return;
-  const el = document.querySelector(`.canvas-node[data-id="${nodeId}"]`);
-  if (el) {
-    el.classList.add('test-pulse');
-    setTimeout(() => el.classList.remove('test-pulse'), 800);
-  }
-  // Dispatch custom DOM event so other modules can respond
-  document.dispatchEvent(new CustomEvent('nc:canvas:test', {
-    detail: { nodeId, kind: node.kind, data: { ...node.data } },
-  }));
-  console.log('[canvas] test trigger:', node.kind, node.data);
+  if (!node || node.kind === 'edgeRule') return;
+
+  // Clear run-specific state; persistent payload cache is preserved across runs
+  _testDisplayTimers.forEach((t) => clearTimeout(t));
+  _testDisplayTimers.clear();
+  _testLiveData.clear();
+  document.querySelectorAll('.canvas-node.test-pulse').forEach((el) => el.classList.remove('test-pulse'));
+  // Refresh overlays — cached payloads remain visible between runs
+  nodes.forEach((n) => _updateNodeLiveDisplay(n.id));
+
+  // Build payload from the node's test payload inputs
+  const payload = {};
+  for (const f of (_KIND_FIELDS[node.kind] ?? [])) payload[f] = node.data._testPayload?.[f] ?? '';
+  _deliverPayload(nodeId, payload);
 }
 
 /** Short metadata summary rendered inside each canvas node. */
@@ -819,6 +873,302 @@ function _nodeBodyHtml(node) {
   return rows.map(([k, v]) =>
     `<span class="body-kv"><span class="body-key">${_esc(k)}</span><span class="body-val">${_esc(String(v))}</span></span>`
   ).join('');
+}
+
+// ── Test Mode ─────────────────────────────────────────────────────────────────
+
+/** Returns the HTML for the footer of a notification node (Trigger / Test Mode toggle + payload inputs). */
+function _nodeFooterHtml(node) {
+  const d        = node.data ?? {};
+  const testMode = !!d._testMode;
+  const fields   = _KIND_FIELDS[node.kind] ?? [];
+
+  let html = `
+    <div class="mode-switch-row">
+      <label class="mode-switch" title="${testMode ? 'Switch to Trigger mode' : 'Switch to Test Mode'}">
+        <input type="checkbox" class="mode-switch-input"${testMode ? ' checked' : ''}>
+        <span class="mode-switch-track"><span class="mode-switch-thumb"></span></span>
+        <span class="mode-switch-label">${testMode ? 'Test Mode' : 'Trigger'}</span>
+      </label>
+    </div>`;
+
+  if (testMode && fields.length) {
+    html += `<div class="test-payload-fields">`;
+    for (const f of fields) {
+      const val = _esc(String(d._testPayload?.[f] ?? ''));
+      html += `
+        <div class="test-payload-row">
+          <span class="test-payload-key">${_esc(f)}</span>
+          <input class="test-payload-input" data-field="${_esc(f)}" value="${val}" placeholder="test value">
+        </div>`;
+    }
+    html += `</div>`;
+  }
+
+  return html;
+}
+
+/** Wire the footer toggle + payload inputs on a node element. */
+function _wireFooter(el) {
+  const nodeId = el.dataset.id;
+
+  const switchInput = el.querySelector('.mode-switch-input');
+  if (!switchInput) return;
+
+  switchInput.addEventListener('change', (e) => {
+    e.stopPropagation();
+    const n = nodes.find((n) => n.id === nodeId);
+    if (!n) return;
+    n.data._testMode = e.target.checked;
+    // Toggle explicit height lock
+    el.style.height = n.data._testMode ? '' : `${n.h}px`;
+    // Re-render footer
+    const footerEl = el.querySelector('.node-footer');
+    if (footerEl) { footerEl.innerHTML = _nodeFooterHtml(n); _wireFooter(el); }
+    // Edges must update because port positions can change
+    _renderAllEdges();
+    _notifyChange();
+  });
+
+  el.querySelectorAll('.test-payload-input').forEach((input) => {
+    input.addEventListener('mousedown', (e) => e.stopPropagation());
+    input.addEventListener('input', (e) => {
+      const field = e.target.dataset.field;
+      const n     = nodes.find((n) => n.id === nodeId);
+      if (!n || !field) return;
+      n.data._testPayload = { ...(n.data._testPayload ?? {}), [field]: e.target.value };
+      _notifyChange();
+    });
+  });
+}
+
+/**
+ * Evaluate outConditions from an edge against a live payload.
+ * Returns { pass: bool, results: [{...cond, actual, pass}] }.
+ * If every condition has operator '' (skip), always passes.
+ */
+function _evaluateConditions(outConditions, payload) {
+  if (!outConditions.length) return { pass: true, results: [] };
+  const results = outConditions.map((c) => {
+    const actual = payload[c.field];
+    if (!c.operator) return { ...c, pass: true, actual };
+    const exp = c.value ?? '';
+    let pass = false;
+    switch (c.operator) {
+      case '==':       pass = String(actual) === String(exp); break;
+      case '!=':       pass = String(actual) !== String(exp); break;
+      case '>':        pass = Number(actual)  >  Number(exp); break;
+      case '<':        pass = Number(actual)  <  Number(exp); break;
+      case '>=':       pass = Number(actual)  >= Number(exp); break;
+      case '<=':       pass = Number(actual)  <= Number(exp); break;
+      case 'contains': pass = String(actual).includes(String(exp)); break;
+      case 'regex':    try { pass = new RegExp(exp).test(String(actual)); } catch { pass = false; } break;
+    }
+    return { ...c, pass, actual };
+  });
+  // All active (non-skip) conditions must pass
+  const pass = results.filter((r) => r.operator).every((r) => r.pass);
+  return { pass, results };
+}
+
+/** Update the .node-live-overlay div inside a canvas node — 2-tab UI (Payloads / Conditions). */
+function _updateNodeLiveDisplay(nodeId) {
+  const runData  = _testLiveData.get(nodeId);
+  const cached   = _payloadCache.get(nodeId);
+  // Prefer live run data; fall back to cached payload to show last known state between runs
+  const liveData = runData ?? (cached?.payload ? { payload: cached.payload, edgeStates: [] } : null);
+  const el       = document.querySelector(`.canvas-node[data-id="${nodeId}"]`);
+  if (!el) return;
+  const overlay = el.querySelector('.node-live-overlay');
+  if (!overlay) return;
+
+  if (!liveData) { overlay.classList.add('hidden'); return; }
+  overlay.classList.remove('hidden');
+
+  // Preserve active tab across re-renders
+  const activeTab = overlay.querySelector('.live-tab-btn.active')?.dataset.tab ?? 'payloads';
+
+  // ── Payloads pane ─────────────────────────────────────────────────────────
+  const payloadEntries = Object.entries(liveData.payload ?? {}).filter(([k]) => !k.startsWith('_'));
+  let payloadsHtml = '';
+  if (payloadEntries.length) {
+    payloadsHtml += '<div class="live-payload">';
+    for (const [k, v] of payloadEntries) {
+      payloadsHtml += `<span class="live-kv"><span class="live-key">${_esc(k)}</span><span class="live-val">${_esc(String(v ?? ''))}</span></span>`;
+    }
+    payloadsHtml += '</div>';
+  } else {
+    payloadsHtml = '<span class="live-empty">No payload yet</span>';
+  }
+
+  // ── Conditions pane ───────────────────────────────────────────────────────
+  let condsHtml = '';
+  if (liveData.edgeStates?.length) {
+    condsHtml += '<div class="live-edge-states">';
+    for (const es of liveData.edgeStates) {
+      const cls = es.pass ? 'pass' : 'fail';
+      condsHtml += `<div class="live-edge-state ${cls}"><span class="live-edge-icon">${es.pass ? '\u2713' : '\u2717'}</span><span class="live-edge-label">\u2192 ${_esc(es.toNodeLabel)}</span></div>`;
+      for (const c of (es.conditions ?? []).filter((c) => c.operator)) {
+        const cc = c.pass ? 'pass' : 'fail';
+        condsHtml += `<div class="live-cond-row ${cc}">`
+          + `<span class="live-cond-icon">${c.pass ? '\u2713' : '\u2717'}</span>`
+          + `<span class="live-cond-field">${_esc(c.field)}</span>`
+          + `<span class="live-cond-op">${_esc(c.operator)}</span>`
+          + `<span class="live-cond-val">${_esc(String(c.value ?? ''))}</span>`
+          + `<span class="live-cond-actual">[${_esc(String(c.actual ?? ''))}]</span>`
+          + `</div>`;
+      }
+    }
+    condsHtml += '</div>';
+  } else {
+    condsHtml = '<span class="live-empty">No outgoing edges</span>';
+  }
+
+  const pA = activeTab === 'payloads';
+  overlay.innerHTML =
+    `<div class="live-tabs">`
+    + `<button class="live-tab-btn${pA ? ' active' : ''}" data-tab="payloads">Payloads</button>`
+    + `<button class="live-tab-btn${!pA ? ' active' : ''}" data-tab="conditions">Conditions</button>`
+    + `</div>`
+    + `<div class="live-pane${pA ? '' : ' hidden'}" data-pane="payloads">${payloadsHtml}</div>`
+    + `<div class="live-pane${!pA ? '' : ' hidden'}" data-pane="conditions">${condsHtml}</div>`;
+
+  // Wire tab buttons
+  overlay.querySelectorAll('.live-tab-btn').forEach((btn) => {
+    btn.addEventListener('mousedown', (e) => e.stopPropagation());
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tab = btn.dataset.tab;
+      overlay.querySelectorAll('.live-tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+      overlay.querySelectorAll('.live-pane').forEach((p) => p.classList.toggle('hidden', p.dataset.pane !== tab));
+    });
+  });
+}
+
+// ── Payload cache helpers ─────────────────────────────────────────────────────────
+
+/** Load the payload cache from localStorage into the in-memory `_payloadCache` map. */
+function _loadPayloadCache() {
+  _payloadCache.clear();
+  try {
+    const raw = localStorage.getItem(_PAYLOAD_CACHE_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    for (const [id, entry] of Object.entries(obj)) {
+      if (id && entry?.payload) _payloadCache.set(id, entry);
+    }
+  } catch { /* ignore corrupted data */ }
+}
+
+/** Debounced (500 ms) write of the in-memory cache to localStorage. */
+function _savePayloadCache() {
+  clearTimeout(_payloadCacheSaveTimer);
+  _payloadCacheSaveTimer = setTimeout(() => {
+    try {
+      const obj = {};
+      for (const [id, entry] of _payloadCache) obj[id] = entry;
+      localStorage.setItem(_PAYLOAD_CACHE_KEY, JSON.stringify(obj));
+    } catch { /* quota exceeded or private mode — silently ignore */ }
+  }, 500);
+}
+
+/** Pulse an SVG edge path with a pass (yellow) or fail (red) colour flash. */
+function _pulseEdge(edgeId, type /* 'pass' | 'fail' */) {
+  const path = document.querySelector(`.canvas-edge[data-edge-id="${edgeId}"]`);
+  if (!path) return;
+  path.classList.remove('edge-pulse-pass', 'edge-pulse-fail');
+  void path.getBoundingClientRect(); // force reflow so re-applying restarts the animation
+  path.classList.add(type === 'pass' ? 'edge-pulse-pass' : 'edge-pulse-fail');
+  setTimeout(() => path.classList.remove('edge-pulse-pass', 'edge-pulse-fail'), 2500);
+}
+
+/**
+ * Deliver an incoming payload to a node.
+ * Merges with any already-accumulated payload, re-evaluates outgoing edge conditions,
+ * and fires any edges that now pass (each edge fires at most once per test run).
+ * Visual updates are debounced so burst deliveries produce a single display refresh.
+ */
+function _deliverPayload(nodeId, incomingPayload) {
+  const node = nodes.find((n) => n.id === nodeId);
+  if (!node) return;
+
+  // ── Accumulate payload: persistent cache ← run state ← new incoming ───────
+  const existing      = _testLiveData.get(nodeId) ?? { payload: {}, edgeStates: [], firedEdges: new Set() };
+  const cachedPayload = _payloadCache.get(nodeId)?.payload ?? {};
+  const mergedPayload = { ...cachedPayload, ...existing.payload, ...incomingPayload };
+
+  // ── Re-evaluate outgoing edge conditions against the merged payload ────────
+  const outEdges   = edges.filter((e) => e.fromNodeId === nodeId);
+  const edgeStates = outEdges.map((edge) => {
+    const toNode = nodes.find((n) => n.id === edge.toNodeId);
+    const { pass, results } = _evaluateConditions(edge.meta?.outConditions ?? [], mergedPayload);
+    return { edgeId: edge.id, toNodeId: edge.toNodeId, toNodeLabel: _nodeLabel(toNode) || 'Node', pass, conditions: results };
+  });
+
+  _testLiveData.set(nodeId, { payload: mergedPayload, edgeStates, firedEdges: existing.firedEdges });
+
+  // ── Persist merged payload so it survives page reloads ───────────────────
+  _payloadCache.set(nodeId, { payload: { ...mergedPayload }, updatedAt: new Date().toISOString() });
+  _savePayloadCache();
+
+  // ── Fire newly-passing out-edges (each edge fires at most once per run) ───
+  for (const edge of outEdges) {
+    const es = edgeStates.find((s) => s.edgeId === edge.id);
+    if (es?.pass && !existing.firedEdges.has(edge.id)) {
+      existing.firedEdges.add(edge.id);
+      const enabled   = (edge.meta?.triggerPayload ?? []).filter((p) => p.enabled);
+      const forwarded = {};
+      if (edge.meta?.triggerName) forwarded.triggerName = edge.meta.triggerName;
+      if (enabled.length) {
+        for (const p of enabled) forwarded[p.targetField ?? p.field] = mergedPayload[p.field] ?? mergedPayload[p.targetField] ?? '';
+      } else {
+        Object.assign(forwarded, mergedPayload);
+      }
+      // Cascade downstream with a 300 ms visual lag
+      setTimeout(() => _deliverPayload(edge.toNodeId, forwarded), 300);
+    }
+  }
+
+  // ── Debounced visual update (50 ms) so burst deliveries merge into one render
+  clearTimeout(_testDisplayTimers.get(nodeId));
+  _testDisplayTimers.set(nodeId, setTimeout(() => {
+    _testDisplayTimers.delete(nodeId);
+    const el = document.querySelector(`.canvas-node[data-id="${nodeId}"]`);
+    if (el) { el.classList.add('test-pulse'); setTimeout(() => el.classList.remove('test-pulse'), 800); }
+    _updateNodeLiveDisplay(nodeId);
+    // Pulse each outgoing edge: yellow if it passed, red if still failing
+    const ld = _testLiveData.get(nodeId);
+    for (const es of (ld?.edgeStates ?? [])) _pulseEdge(es.edgeId, es.pass ? 'pass' : 'fail');
+    document.dispatchEvent(new CustomEvent('nc:canvas:test', {
+      detail: { nodeId, kind: node.kind, data: { ...node.data }, payload: { ...mergedPayload } },
+    }));
+    console.log('[canvas] test payload →', node.kind, mergedPayload);
+  }, 50));
+}
+
+/**
+ * Fire a simulated signal from every notification node that is in Test Mode.
+ * Payloads flow downstream through edges exactly as configured.
+ */
+export function triggerTestNodes() {
+  // Clear run-specific state; persistent payload cache is preserved across runs
+  _testDisplayTimers.forEach((t) => clearTimeout(t));
+  _testDisplayTimers.clear();
+  _testLiveData.clear();
+  document.querySelectorAll('.canvas-node.test-pulse').forEach((el) => el.classList.remove('test-pulse'));
+  // Refresh overlays — cached payloads remain visible between runs
+  nodes.forEach((n) => _updateNodeLiveDisplay(n.id));
+
+  const testNodes = nodes.filter((n) => n.kind !== 'edgeRule' && n.data._testMode);
+  if (!testNodes.length) {
+    toast('No nodes in Test Mode', 'warn');
+    return;
+  }
+  for (const node of testNodes) {
+    const payload = {};
+    for (const f of (_KIND_FIELDS[node.kind] ?? [])) payload[f] = node.data._testPayload?.[f] ?? '';
+    _deliverPayload(node.id, payload);
+  }
 }
 
 function _notifyChange() {

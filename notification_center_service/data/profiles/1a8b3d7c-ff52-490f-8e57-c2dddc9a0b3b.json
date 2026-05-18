@@ -3,14 +3,14 @@
   "name": "Intel Notification",
   "description": "",
   "createdAt": "2026-05-17T17:00:39.630Z",
-  "updatedAt": "2026-05-17T22:28:53.032Z",
+  "updatedAt": "2026-05-18T19:12:11.600Z",
   "canvas": {
     "nodes": [
       {
         "id": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
         "kind": "market",
-        "x": -416.48994102654274,
-        "y": 341.5675061736831,
+        "x": -506.32889705540106,
+        "y": 259.8957279656301,
         "w": 415,
         "h": 231,
         "data": {
@@ -41,10 +41,10 @@
       {
         "id": "c695fd6a-1be8-4680-b517-7fa4545f7e37",
         "kind": "news",
-        "x": -341.76673383006084,
-        "y": 42.17928323129341,
-        "w": 314,
-        "h": 183,
+        "x": -488.7759346045563,
+        "y": -62.632832135707986,
+        "w": 365.72545953176694,
+        "h": 242.89263735257222,
         "data": {
           "inputs": 1,
           "outputs": 1,
@@ -71,10 +71,10 @@
       {
         "id": "d1063c22-0d38-4031-9d10-98665d8a1fa2",
         "kind": "edgeRule",
-        "x": 733.2625082157361,
-        "y": 769.2532778822356,
-        "w": 389.3453669089642,
-        "h": 219.09642522346383,
+        "x": 721.2878537298401,
+        "y": 813.4478182454375,
+        "w": 445.15441535113376,
+        "h": 287.0598151733775,
         "data": {
           "inputs": 2,
           "outputs": 1,
@@ -134,8 +134,8 @@
       {
         "id": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
         "kind": "map",
-        "x": -427.72792925479735,
-        "y": 744.7340425859144,
+        "x": -517.3101379614357,
+        "y": 638.9615368004371,
         "w": 378.13357030162433,
         "h": 189.72086202337704,
         "data": {
@@ -160,16 +160,24 @@
           "count": 1,
           "windowMs": 60000,
           "title": "Entered Region",
-          "message": ""
+          "message": "",
+          "_testMode": true,
+          "_testPayload": {
+            "eventCategory": "Iran",
+            "latitude": "23.45",
+            "longitude": "34.56",
+            "title": "Ship in iran zone",
+            "region": "IR"
+          }
         }
       },
       {
         "id": "0eda1960-ce19-43d0-988e-9cb61adc2839",
         "kind": "market",
-        "x": 164.41880708230894,
-        "y": 758.8408419034857,
-        "w": 406.8972361460803,
-        "h": 217.13299899084532,
+        "x": 82.026736060399,
+        "y": 765.7068478219784,
+        "w": 449.4664728407338,
+        "h": 339.21490534916654,
         "data": {
           "inputs": 2,
           "outputs": 2,
@@ -192,14 +200,15 @@
           "count": 1,
           "windowMs": 60000,
           "title": "Value has changed when",
-          "message": ""
+          "message": "",
+          "_testMode": false
         }
       },
       {
         "id": "fea88a8d-aa02-4c2b-971a-76f22386e066",
         "kind": "polymarket",
-        "x": -424.3324749938114,
-        "y": 1031.341480494295,
+        "x": -526.2254748328123,
+        "y": 1036.8823047500127,
         "w": 400.9774191053552,
         "h": 173.65913970178505,
         "data": {
@@ -224,7 +233,14 @@
           "count": 1,
           "windowMs": 60000,
           "title": "",
-          "message": ""
+          "message": "",
+          "_testMode": true,
+          "_testPayload": {
+            "marketId": "1123546",
+            "question": "Will the tanker survive",
+            "yesProbability": "0.7",
+            "noProbability": "0.3"
+          }
         }
       }
     ],
@@ -335,7 +351,16 @@
               "sourceNodeLabel": "Entered Region"
             }
           ],
-          "outConditions": []
+          "outConditions": [
+            {
+              "field": "latitude",
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region",
+              "operator": ">",
+              "value": "30"
+            }
+          ]
         }
       },
       {
@@ -420,7 +445,40 @@
               "sourceNodeLabel": "Value has changed when"
             }
           ],
-          "outConditions": []
+          "outConditions": [
+            {
+              "field": "latitude",
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region",
+              "operator": ">",
+              "value": "20"
+            },
+            {
+              "field": "longitude",
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region",
+              "operator": "<",
+              "value": "35"
+            },
+            {
+              "field": "yesProbability",
+              "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+              "sourceNodeKind": "polymarket",
+              "sourceNodeLabel": "PolyMarket",
+              "operator": ">",
+              "value": "0.5"
+            },
+            {
+              "field": "noProbability",
+              "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+              "sourceNodeKind": "polymarket",
+              "sourceNodeLabel": "PolyMarket",
+              "operator": "<",
+              "value": "0.4"
+            }
+          ]
         }
       },
       {
@@ -461,15 +519,23 @@
               "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
               "sourceNodeKind": "polymarket",
               "sourceNodeLabel": "PolyMarket"
+            },
+            {
+              "field": "priority",
+              "targetField": "priority",
+              "enabled": true,
+              "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+              "sourceNodeKind": "polymarket",
+              "sourceNodeLabel": "PolyMarket"
             }
           ]
         }
       }
     ],
     "viewport": {
-      "x": 555.5512256285014,
-      "y": 76.58606702125516,
-      "zoom": 0.6188778108280859
+      "x": 619.8061726699118,
+      "y": 62.37095450348647,
+      "zoom": 0.7346478957168567
     },
     "profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
   }
