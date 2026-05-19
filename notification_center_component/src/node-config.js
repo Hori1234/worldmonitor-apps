@@ -203,6 +203,30 @@ export function initEdgeModal() {
   document.getElementById('edge-config-modal')?.addEventListener('click', (e) => {
     if (e.target.id === 'edge-config-modal') _closeEdgeModal();
   });
+
+  // Resize handle
+  const resizeHandle = document.getElementById('edge-modal-resize');
+  const modalEl = document.querySelector('#edge-config-modal .modal-wide');
+  if (resizeHandle && modalEl) {
+    resizeHandle.addEventListener('mousedown', (e) => {
+      e.stopPropagation(); e.preventDefault();
+      // Remove CSS max constraints so inline style can grow freely
+      modalEl.style.maxWidth  = 'none';
+      modalEl.style.maxHeight = 'none';
+      const startX = e.clientX, startY = e.clientY;
+      const startW = modalEl.offsetWidth, startH = modalEl.offsetHeight;
+      const onMove = (mv) => {
+        modalEl.style.width  = `${Math.max(600, startW + (mv.clientX - startX))}px`;
+        modalEl.style.height = `${Math.max(400, startH + (mv.clientY - startY))}px`;
+      };
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+  }
 }
 
 export function openEdgeModal(edge, nodes, onApply) {

@@ -42,7 +42,8 @@ const _testDisplayTimers = new Map(); // per-node debounce timers for live displ
 // nodeId → { payload: {}, updatedAt: ISO string }
 const _payloadCache = new Map();
 let _payloadCacheSaveTimer = null;
-const _PAYLOAD_CACHE_KEY = 'nc:canvas:payload-cache';
+let _activeProfileId = null; // set by setActiveProfile(); scopes the cache key
+const _payloadCacheKey = () => `nc:canvas:payload-cache:${_activeProfileId ?? '_'}`;
 let _onNodeOpen   = null; // callback(node)
 let _onEdgeCreate = null; // callback(edge) after a connection is made
 let _onEdgeEdit   = null; // callback(edgeId) to re-open edge config modal
@@ -136,6 +137,7 @@ export function initCanvas({ onNodeOpen, onDelete, onEdgeCreate, onEdgeEdit } = 
 
 export function addNode(kind, x = 100, y = 100) {
   const node = { id: crypto.randomUUID(), kind, x, y, w: 180, h: 100, data: { inputs: 1, outputs: 1 } };
+  if (_activeProfileId) node.data._profileId = _activeProfileId;
   nodes.push(node);
   _renderNode(node);
   _notifyChange();
@@ -191,6 +193,7 @@ export function loadCanvasState(state) {
     n.data = n.data ?? {};
     n.data.inputs  = n.data.inputs  ?? 1;
     n.data.outputs = n.data.outputs ?? 1;
+    if (_activeProfileId) n.data._profileId = _activeProfileId; // stamp active profile
     nodes.push(n); _renderNode(n);
   });
   (state.edges ?? []).forEach((e) => { edges.push(e); });
@@ -198,6 +201,14 @@ export function loadCanvasState(state) {
   _applyTransform();
   // Show cached payload overlays on nodes that have accumulated data from prior runs
   nodes.forEach((n) => _updateNodeLiveDisplay(n.id));
+}
+
+/** Set the active profile ID. Scopes the payload cache to this profile and reloads it. */
+export function setActiveProfile(id) {
+  if (_activeProfileId === id) return;
+  _activeProfileId = id;
+  _payloadCache.clear();
+  _loadPayloadCache(); // reload cache scoped to the new profile
 }
 
 export function getCanvasState() {
@@ -476,10 +487,14 @@ function _makeResizable(el, node) {
     const startW = node.w;
     // Use actual DOM height so resize works correctly whether or not test mode is active
     const startH = el.offsetHeight;
+    // Measure natural content height as the minimum — prevents squishing below content
+    el.style.height = 'auto';
+    const minH = el.offsetHeight;
+    el.style.height = `${startH}px`;
 
     const onMove = (e) => {
       node.w = Math.max(150, startW + (e.clientX - startX) / viewport.zoom);
-      node.h = Math.max(80,  startH + (e.clientY - startY) / viewport.zoom);
+      node.h = Math.max(minH, startH + (e.clientY - startY) / viewport.zoom);
       el.style.width  = `${node.w}px`;
       el.style.height = `${node.h}px`;
       _renderPorts(el, node);
@@ -1051,7 +1066,7 @@ function _updateNodeLiveDisplay(nodeId) {
 function _loadPayloadCache() {
   _payloadCache.clear();
   try {
-    const raw = localStorage.getItem(_PAYLOAD_CACHE_KEY);
+    const raw = localStorage.getItem(_payloadCacheKey());
     if (!raw) return;
     const obj = JSON.parse(raw);
     for (const [id, entry] of Object.entries(obj)) {
@@ -1067,7 +1082,7 @@ function _savePayloadCache() {
     try {
       const obj = {};
       for (const [id, entry] of _payloadCache) obj[id] = entry;
-      localStorage.setItem(_PAYLOAD_CACHE_KEY, JSON.stringify(obj));
+      localStorage.setItem(_payloadCacheKey(), JSON.stringify(obj));
     } catch { /* quota exceeded or private mode — silently ignore */ }
   }, 500);
 }
@@ -1140,7 +1155,7 @@ function _deliverPayload(nodeId, incomingPayload) {
     const ld = _testLiveData.get(nodeId);
     for (const es of (ld?.edgeStates ?? [])) _pulseEdge(es.edgeId, es.pass ? 'pass' : 'fail');
     document.dispatchEvent(new CustomEvent('nc:canvas:test', {
-      detail: { nodeId, kind: node.kind, data: { ...node.data }, payload: { ...mergedPayload } },
+      detail: { nodeId, profileId: _activeProfileId, kind: node.kind, data: { ...node.data }, payload: { ...mergedPayload } },
     }));
     console.log('[canvas] test payload →', node.kind, mergedPayload);
   }, 50));

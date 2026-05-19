@@ -210,8 +210,8 @@ router.post('/edge-rules/:id/disable', (req, res) => {
   res.json({ ok: true, rule });
 });
 
-router.post('/edge-rules/:id/test', (req, res) => {
-  const result = testRule(req.params.id, req.body);
+router.post('/edge-rules/:id/test', async (req, res) => {
+  const result = await testRule(req.params.id, req.body);
   if (!result.ok) return res.status(404).json(result);
   res.json(result);
 });

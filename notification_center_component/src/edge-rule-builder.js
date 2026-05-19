@@ -18,6 +18,7 @@ let _activeRuleId = null;
 const list     = () => document.getElementById('rules-list');
 const form     = () => document.getElementById('rule-form');
 const testLog  = () => document.getElementById('rule-test-log');
+const ruleSwitch = () => document.getElementById('rule-view-switch');
 const emptyMsg = () => document.getElementById('rule-empty');
 
 const fNewBtn  = () => document.getElementById('rule-new-btn');
@@ -102,10 +103,29 @@ function _showForm() {
   form()?.classList.remove('hidden');
   emptyMsg()?.classList.add('hidden');
   testLog()?.classList.add('hidden');
+  // Show toggle and reset to Action tab whenever a rule is opened
+  const sw = document.getElementById('rule-view-switch');
+  sw?.classList.remove('hidden');
+  sw?.querySelectorAll('.view-tab').forEach((btn) => {
+    btn.onclick = () => _switchRuleView(btn.dataset.view);
+  });
+  _switchRuleView('action');
+}
+
+function _switchRuleView(tab) {
+  const isAction = tab === 'action';
+  // Action tab: show form body, hide test log
+  // Console tab: hide form body, show test log
+  form()?.classList.toggle('hidden', !isAction);
+  testLog()?.classList.toggle('hidden', isAction);
+  document.getElementById('rule-view-switch')?.querySelectorAll('.view-tab').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.view === tab);
+  });
 }
 
 function _hideForm() {
   form()?.classList.add('hidden');
+  document.getElementById('rule-view-switch')?.classList.add('hidden');
   emptyMsg()?.classList.remove('hidden');
 }
 
@@ -122,6 +142,8 @@ function _newRule() {
   fFVal()   && (fFVal().value   = '');
   _syncActionFields();
   _showForm();
+  _renderPayloadVarPanel(null);
+  _wireBodyTemplatePreviews(null);
   fName()?.focus();
 }
 
@@ -202,6 +224,7 @@ function _readForm() {
         windowMs: parseInt(fWindow()?.value ?? '60000', 10),
         resetAfterFire: true,
       },
+      inputConditions: _readInputConditionsFromDOM(),
     },
     actions: [action],
   };
@@ -252,10 +275,23 @@ async function _onDelete() {
 
 async function _onTest() {
   if (!_activeRuleId) return;
+
+  // Auto-save current form state so the test reflects unsaved edits
+  const data = _readForm();
+  try {
+    const saveRes = await api.updateRule(_activeRuleId, data);
+    if (!saveRes.ok) throw new Error(saveRes.error ?? 'Save failed');
+    const idx = _rules.findIndex((r) => r.id === _activeRuleId);
+    if (idx !== -1) _rules[idx] = saveRes.rule;
+  } catch (err) {
+    toast(`Auto-save failed: ${err.message}`, 'error');
+    return;
+  }
+
   const payload = { icmType: fIcm()?.value ?? '*', _test: true };
   try {
     const res = await api.testRule(_activeRuleId, payload);
-    testLog()?.classList.remove('hidden');
+    _switchRuleView('console');
     testLog().innerHTML = (res.log ?? []).map((entry) => `
       <div class="test-log-entry${entry.msg.includes('FIRE') ? ' fire' : ''}">
         [${entry.ts?.slice(11, 19) ?? ''}] ${_esc(entry.msg)}
@@ -416,12 +452,16 @@ function _renderInputConditions(ruleId) {
 
   if (!canvasNode) {
     container.innerHTML = '<p class="input-cond-empty">No canvas node linked to this rule.</p>';
+    _renderPayloadVarPanel(ruleId);
+    _wireBodyTemplatePreviews(ruleId);
     return;
   }
 
   const inEdges = edges.filter((e) => e.toNodeId === canvasNode.id);
   if (!inEdges.length) {
     container.innerHTML = '<p class="input-cond-empty">No inputs connected yet — draw edges to this node on the canvas.</p>';
+    _renderPayloadVarPanel(ruleId);
+    _wireBodyTemplatePreviews(ruleId);
     return;
   }
 
@@ -516,6 +556,10 @@ function _renderInputConditions(ruleId) {
     // Re-wire in case canvasNode changed
     document.getElementById('rule-save-conditions-btn').onclick = () => _saveInputConditions(canvasNode.id);
   }
+
+  // Refresh payload variable panel and wire live template previews
+  _renderPayloadVarPanel(ruleId);
+  _wireBodyTemplatePreviews(ruleId);
 }
 
 function _saveInputConditions(nodeId) {
@@ -544,4 +588,157 @@ function _saveInputConditions(nodeId) {
 
   updateNodeData(nodeId, { _inputConditions: inputConditions });
   toast('Input conditions saved', 'success');
+}
+
+// ── Payload variable panel & body template preview ────────────────────────────
+
+/**
+ * Collect all enabled payload fields from edges connected to the edgeRule canvas node
+ * associated with ruleId. Returns [{field, sourceKind, sourceLabel}].
+ */
+function _getConnectedPayloadFields(ruleId) {
+  if (!ruleId) return [];
+  const { nodes, edges } = getCanvasState();
+  const canvasNode = nodes.find((n) => n.kind === 'edgeRule' && n.data?._ruleId === ruleId);
+  if (!canvasNode) return [];
+  const inEdges = edges.filter((e) => e.toNodeId === canvasNode.id);
+  const fields = []; const seen = new Set();
+  for (const edge of inEdges) {
+    const fromNode = nodes.find((n) => n.id === edge.fromNodeId);
+    for (const p of (edge.meta?.triggerPayload ?? []).filter((p) => p.enabled)) {
+      const fieldName = p.targetField ?? p.field;
+      if (!seen.has(fieldName)) {
+        seen.add(fieldName);
+        fields.push({
+          field:       fieldName,
+          sourceKind:  p.sourceNodeKind  ?? fromNode?.kind,
+          sourceLabel: p.sourceNodeLabel ?? fromNode?.data?.title ?? fromNode?.data?.ticker ?? fromNode?.kind ?? '',
+        });
+      }
+    }
+  }
+  return fields;
+}
+
+/** Render clickable field chips in the payload-vars panels for both email and webhook. */
+function _renderPayloadVarPanel(ruleId) {
+  const fields = _getConnectedPayloadFields(ruleId);
+  const panel = document.getElementById('email-payload-vars');
+  if (!panel) return;
+  if (!fields.length) {
+    panel.innerHTML = ruleId
+      ? '<span class="payload-vars-hint">No payload fields enabled on connected edges.</span>'
+      : '';
+    return;
+  }
+  panel.innerHTML = `
+    <div class="payload-vars-header">⚡ Payload fields — click to insert <code>{{#field}}</code></div>
+    <div class="payload-vars-chips">
+      ${fields.map((f) => `
+        <button type="button" class="var-chip" data-field="${_esc(f.field)}"
+          title="From: ${_esc(f.sourceLabel)}">${KIND_ICONS[f.sourceKind] ?? ''}${_esc(f.field)}</button>
+      `).join('')}
+    </div>`;
+  panel.querySelectorAll('.var-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const ta = document.getElementById('rule-email-body');
+      if (ta) _insertAtCursor(ta, `{{#${chip.dataset.field}}}`);
+    });
+  });
+}
+
+/** Insert text at the cursor position inside a textarea. */
+function _insertAtCursor(textarea, text) {
+  const start = textarea.selectionStart;
+  const end   = textarea.selectionEnd;
+  textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+  textarea.selectionStart = textarea.selectionEnd = start + text.length;
+  textarea.dispatchEvent(new Event('input'));
+  textarea.focus();
+}
+
+/** Update chip highlight state and the live template preview for one textarea. */
+function _onBodyTemplateInput(ta, previewEl, panelId, fields) {
+  const tpl = ta.value;
+  // Collect {{#field}} usages
+  const used = new Set([...tpl.matchAll(/\{\{#([^}]+)\}\}/g)].map((m) => m[1].trim()));
+  // Highlight chips that are currently used
+  document.getElementById(panelId)?.querySelectorAll('.var-chip').forEach((chip) => {
+    chip.classList.toggle('used', used.has(chip.dataset.field));
+  });
+  // Show/hide preview
+  if (!tpl) { previewEl.classList.add('hidden'); return; }
+  previewEl.classList.remove('hidden');
+  const exampleMap = Object.fromEntries(fields.map((f) => [f.field, `\u2039${f.field}\u203a`]));
+  // Build highlighted HTML (escape first, then replace tokens with spans)
+  const html = _esc(tpl)
+    .replace(/\{\{#([^}]+)\}\}/g, (_, f) => {
+      const ex = _esc(exampleMap[f.trim()] ?? f.trim());
+      return `<mark class="tpl-var" title="payload.${_esc(f.trim())}">${ex}</mark>`;
+    })
+    .replace(/\{\{([^}]+)\}\}/g, (_, k) => `<span class="tpl-sysvar">{{${_esc(k)}}}</span>`)
+    .replace(/\n/g, '<br>');
+  previewEl.innerHTML = `<div class="body-preview-label">Preview (example values)</div><div class="body-preview-content">${html}</div>`;
+}
+
+/**
+ * Auto-generate the webhook JSON body from the email body text.
+ * Produces { "message": "<body>", "<field>": "{{#field}}", ... } for every
+ * {{#field}} token found in the email body. Fires oninput on the webhook
+ * textarea so its preview also refreshes.
+ */
+function _syncEmailToWebhookJson(emailTa, webhookTa) {
+  const text = emailTa.value;
+  const vars = [...new Set([...text.matchAll(/\{\{#([^}]+)\}\}/g)].map((m) => m[1].trim()))];
+  const obj = { message: text };
+  for (const v of vars) obj[v] = `{{#${v}}}`;
+  webhookTa.value = JSON.stringify(obj, null, 2);
+  webhookTa.dispatchEvent(new Event('input'));
+}
+
+/**
+ * Wire oninput handlers on both body textareas so the preview and chip highlights
+ * update in real time. Uses oninput (property) to avoid duplicate listeners on re-render.
+ * The email body also drives the webhook JSON body via _syncEmailToWebhookJson.
+ */
+function _wireBodyTemplatePreviews(ruleId) {
+  const fields = _getConnectedPayloadFields(ruleId);
+  const emailTa   = document.getElementById('rule-email-body');
+  const webhookTa = document.getElementById('rule-webhook-body');
+  ['email', 'webhook'].forEach((type) => {
+    const ta      = document.getElementById(type === 'email' ? 'rule-email-body' : 'rule-webhook-body');
+    const preview = document.getElementById(`${type}-body-preview`);
+    const panelId = `${type}-payload-vars`;
+    if (!ta || !preview) return;
+    if (type === 'email') {
+      ta.oninput = () => {
+        _onBodyTemplateInput(ta, preview, panelId, fields);
+        if (webhookTa) _syncEmailToWebhookJson(ta, webhookTa);
+      };
+    } else {
+      ta.oninput = () => _onBodyTemplateInput(ta, preview, panelId, fields);
+    }
+    _onBodyTemplateInput(ta, preview, panelId, fields); // sync preview immediately
+  });
+  // Sync JSON body immediately on load too
+  if (emailTa && webhookTa) _syncEmailToWebhookJson(emailTa, webhookTa);
+}
+
+/** Read inputConditions from the Connected Inputs DOM table for inclusion in the rule save. */
+function _readInputConditionsFromDOM() {
+  const container = document.getElementById('rule-input-conditions');
+  if (!container) return [];
+  const result = [];
+  container.querySelectorAll('.input-cond-item').forEach((item) => {
+    const edgeId = item.dataset.edgeId;
+    const conditions = [];
+    item.querySelectorAll('.cond-row').forEach((row) => {
+      const op  = row.querySelector('.cond-op')?.value;
+      const val = row.querySelector('.cond-val')?.value?.trim() ?? '';
+      if (!op) return;
+      conditions.push({ field: row.dataset.field, operator: op, value: val });
+    });
+    if (conditions.length) result.push({ edgeId, conditions });
+  });
+  return result;
 }

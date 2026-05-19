@@ -5,7 +5,7 @@
 import './style.css';
 import { initNotifications }    from './notifications.js';
 import { initProfileSelector, getCurrentProfileId } from './profile-selector.js';
-import { initCanvas, loadCanvasState, getCanvasState, clearCanvas, removeNode, updateEdgeMeta, updateNodeData, getAggregatedPayload, triggerTestNodes } from './canvas.js';
+import { initCanvas, loadCanvasState, getCanvasState, clearCanvas, removeNode, updateEdgeMeta, updateNodeData, getAggregatedPayload, triggerTestNodes, setActiveProfile } from './canvas.js';
 import { initNodePalette }      from './node-palette.js';
 import { initNodeConfig, openFlyout, initEdgeModal, openEdgeModal } from './node-config.js';
 import { initObjectsBrowser }   from './objects-browser.js';
@@ -161,6 +161,7 @@ function init() {
 
   // Profile selector — loads canvas when profile changes
   initProfileSelector(async (profileId) => {
+    setActiveProfile(profileId);
     await _loadCanvas(profileId);
   });
 

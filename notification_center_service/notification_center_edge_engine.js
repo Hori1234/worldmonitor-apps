@@ -64,6 +64,7 @@ export function createRule(data) {
     trigger: {
       icmType: data.trigger?.icmType ?? '*',
       filter:  data.trigger?.filter  ?? null,
+      inputConditions: data.trigger?.inputConditions ?? [],
       threshold: {
         count:          data.trigger?.threshold?.count          ?? 1,
         windowMs:       data.trigger?.threshold?.windowMs       ?? 60000,
@@ -87,7 +88,8 @@ export function updateRule(id, data) {
   if (data.enabled     !== undefined) rule.enabled     = data.enabled;
   if (data.trigger     !== undefined) {
     rule.trigger.icmType = data.trigger.icmType ?? rule.trigger.icmType;
-    if (data.trigger.filter !== undefined) rule.trigger.filter = data.trigger.filter;
+    if (data.trigger.filter           !== undefined) rule.trigger.filter           = data.trigger.filter;
+    if (data.trigger.inputConditions  !== undefined) rule.trigger.inputConditions  = data.trigger.inputConditions;
     if (data.trigger.threshold) {
       Object.assign(rule.trigger.threshold, data.trigger.threshold);
     }
@@ -131,6 +133,21 @@ function matchFilter(filter, icm) {
   }
 }
 
+/**
+ * Validate all inputConditions groups from a rule against an ICM payload.
+ * All conditions across all groups must pass (AND logic).
+ */
+function validateInputConditions(rule, icm) {
+  const groups = rule.trigger?.inputConditions ?? [];
+  if (!groups.length) return true;
+  for (const group of groups) {
+    for (const cond of (group.conditions ?? [])) {
+      if (!matchFilter({ field: cond.field, operator: cond.operator, value: cond.value }, icm)) return false;
+    }
+  }
+  return true;
+}
+
 /** Build the template context passed to action executors. */
 function buildContext(rule, matchedTimestamps, lastICM) {
   return {
@@ -140,6 +157,7 @@ function buildContext(rule, matchedTimestamps, lastICM) {
     icmType:     lastICM.icmType,
     ruleName:    rule.name,
     lastIcm:     lastICM,
+    payload:     { ...lastICM }, // flat copy — enables {{#field}} shorthand in templates
   };
 }
 
@@ -179,6 +197,9 @@ export function evaluateICM(icm, broadcast) {
     // Filter match
     if (!matchFilter(rule.trigger.filter, icm)) continue;
 
+    // Input conditions match (AND across all connected-input condition groups)
+    if (!validateInputConditions(rule, icm)) continue;
+
     // Rolling window counter
     const windowMs = rule.trigger.threshold.windowMs ?? 60000;
     const needed   = rule.trigger.threshold.count    ?? 1;
@@ -199,8 +220,8 @@ export function evaluateICM(icm, broadcast) {
 
 // ── Test endpoint helper ──────────────────────────────────────────────────────
 
-/** Simulate an ICM against a specific rule; returns a log array. */
-export function testRule(ruleId, icmPayload) {
+/** Simulate an ICM against a specific rule; actually fires actions when threshold is met. */
+export async function testRule(ruleId, icmPayload) {
   const rule = getRule(ruleId);
   if (!rule) return { ok: false, error: 'Rule not found' };
 
@@ -213,7 +234,10 @@ export function testRule(ruleId, icmPayload) {
   const filterMatch = matchFilter(rule.trigger.filter, icmPayload);
   log.push({ ts: new Date().toISOString(), msg: `Filter match: ${filterMatch}` });
 
-  if (!icmTypeMatch || !filterMatch) {
+  const inputCondsMatch = validateInputConditions(rule, icmPayload);
+  log.push({ ts: new Date().toISOString(), msg: `Input conditions match: ${inputCondsMatch}` });
+
+  if (!icmTypeMatch || !filterMatch || !inputCondsMatch) {
     log.push({ ts: new Date().toISOString(), msg: 'Rule would NOT fire (condition not met).' });
     return { ok: true, wouldFire: false, log };
   }
@@ -225,7 +249,31 @@ export function testRule(ruleId, icmPayload) {
 
   log.push({ ts: new Date().toISOString(), msg: `Counter after this ICM: ${ts.length}/${needed}` });
   const wouldFire = ts.length >= needed;
-  log.push({ ts: new Date().toISOString(), msg: wouldFire ? 'RULE WOULD FIRE → actions dispatched' : 'Not yet at threshold.' });
+  log.push({ ts: new Date().toISOString(), msg: wouldFire ? 'RULE FIRES → dispatching actions…' : 'Not yet at threshold.' });
+
+  if (wouldFire) {
+    const ctx = {
+      count:    ts.length,
+      windowMs,
+      ruleName: rule.name,
+      icmType:  icmPayload.icmType ?? rule.trigger.icmType,
+      lastIcm:  icmPayload,
+      payload:  { ...icmPayload },
+    };
+    for (const action of rule.actions) {
+      try {
+        if (action.actionType === 'email') {
+          await sendEmail(action, ctx);
+          log.push({ ts: new Date().toISOString(), msg: `✉ Email sent to: ${(action.to ?? []).join(', ')}` });
+        } else if (action.actionType === 'webhook') {
+          await fireWebhook(action, ctx);
+          log.push({ ts: new Date().toISOString(), msg: `🔗 Webhook fired: ${action.method ?? 'POST'} ${action.url}` });
+        }
+      } catch (e) {
+        log.push({ ts: new Date().toISOString(), msg: `✗ Action error (${action.actionType}): ${e.message}` });
+      }
+    }
+  }
 
   return { ok: true, wouldFire, counter: { current: ts.length, needed }, log };
 }

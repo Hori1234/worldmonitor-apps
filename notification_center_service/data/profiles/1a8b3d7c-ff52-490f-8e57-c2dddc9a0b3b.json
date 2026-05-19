@@ -3,16 +3,16 @@
   "name": "Intel Notification",
   "description": "",
   "createdAt": "2026-05-17T17:00:39.630Z",
-  "updatedAt": "2026-05-18T22:01:29.269Z",
+  "updatedAt": "2026-05-19T21:53:55.925Z",
   "canvas": {
     "nodes": [
       {
         "id": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
         "kind": "market",
-        "x": -506.32889705540106,
-        "y": 259.8957279656301,
-        "w": 505.44074978443393,
-        "h": 254.71823043843602,
+        "x": -122.38137462150502,
+        "y": 193.05449222808167,
+        "w": 425.8167290438793,
+        "h": 363.86155733329394,
         "data": {
           "inputs": 1,
           "outputs": 1,
@@ -36,16 +36,17 @@
           "windowMs": 60000,
           "title": "Intel Stock",
           "message": "",
-          "_testMode": false
+          "_testMode": true,
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
         }
       },
       {
         "id": "c695fd6a-1be8-4680-b517-7fa4545f7e37",
         "kind": "news",
-        "x": -518.4518056275738,
-        "y": -131.8765311894152,
-        "w": 365.72545953176694,
-        "h": 242.89263735257222,
+        "x": -835.8543701367174,
+        "y": -117.00714947915222,
+        "w": 513.2937778641342,
+        "h": 329,
         "data": {
           "inputs": 1,
           "outputs": 1,
@@ -67,7 +68,8 @@
           "windowMs": 60000,
           "title": "intel is coming back",
           "message": "",
-          "_testMode": false
+          "_testMode": true,
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
         }
       },
       {
@@ -98,14 +100,15 @@
           "count": 1,
           "windowMs": 60000,
           "title": "",
-          "message": ""
+          "message": "",
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
         }
       },
       {
         "id": "e6e7dde1-2706-4e0c-a78a-0d8c8f05bd37",
         "kind": "edgeRule",
-        "x": 684.2583562108304,
-        "y": 376.6546620658257,
+        "x": 724.3305724807336,
+        "y": 321.55536469470866,
         "w": 393.24828321861855,
         "h": 241.37506620752504,
         "data": {
@@ -130,16 +133,17 @@
           "title": "",
           "message": "",
           "_createStub": false,
-          "_ruleId": "25a5e9a3-ab16-4a49-9ae1-acc3a4e575be"
+          "_ruleId": "25a5e9a3-ab16-4a49-9ae1-acc3a4e575be",
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
         }
       },
       {
         "id": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
         "kind": "map",
-        "x": -544.1597355536894,
-        "y": 630.4827165081464,
-        "w": 378.13357030162433,
-        "h": 189.72086202337704,
+        "x": -728.7204295654135,
+        "y": 548.5090846636057,
+        "w": 332.4715880377657,
+        "h": 366,
         "data": {
           "inputs": 1,
           "outputs": 1,
@@ -170,14 +174,15 @@
             "longitude": "34.56",
             "title": "Ship in iran zone",
             "region": "IR"
-          }
+          },
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
         }
       },
       {
         "id": "0eda1960-ce19-43d0-988e-9cb61adc2839",
         "kind": "market",
-        "x": 82.026736060399,
-        "y": 765.7068478219784,
+        "x": -72.00084522704174,
+        "y": 651.7514828044409,
         "w": 449.4664728407338,
         "h": 339.21490534916654,
         "data": {
@@ -203,16 +208,17 @@
           "windowMs": 60000,
           "title": "Value has changed when",
           "message": "",
-          "_testMode": false
+          "_testMode": true,
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
         }
       },
       {
         "id": "fea88a8d-aa02-4c2b-971a-76f22386e066",
         "kind": "polymarket",
-        "x": -567.206439578884,
-        "y": 1065.1450390576483,
-        "w": 486.3417785573065,
-        "h": 326.54450386919956,
+        "x": -719.8826331592713,
+        "y": 1029.6974745515442,
+        "w": 345.12276845831366,
+        "h": 311,
         "data": {
           "inputs": 1,
           "outputs": 1,
@@ -242,7 +248,8 @@
             "question": "Will the tanker survive",
             "yesProbability": "0.7",
             "noProbability": "0.3"
-          }
+          },
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
         }
       }
     ],
@@ -535,9 +542,9 @@
       }
     ],
     "viewport": {
-      "x": 605.3262795101539,
-      "y": -16.096359506497038,
-      "zoom": 0.7076456149749354
+      "x": 581.6230410639255,
+      "y": 383.5657528168026,
+      "zoom": 0.5258127626924763
     },
     "profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
   }

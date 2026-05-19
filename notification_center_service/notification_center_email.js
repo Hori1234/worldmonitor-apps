@@ -49,12 +49,18 @@ export async function sendEmail(action, context) {
   console.log(`[nc-email] Sent to: ${(action.to ?? []).join(', ')} — "${subject}"`);
 }
 
-/** Replace {{variable}} placeholders in a template string. */
+/** Replace {{variable}} placeholders in a template string. Supports {{#field}} as payload shorthand. */
 function renderTemplate(template, ctx) {
   return template.replace(/\{\{([^}]+)\}\}/g, (_, key) => {
-    const parts = key.trim().split('.');
+    const trimmed = key.trim();
+    if (trimmed.startsWith('#')) {
+      // {{#field}} → ctx.payload[field] (shorthand for connected-input payload fields)
+      const field = trimmed.slice(1);
+      return String(ctx.payload?.[field] ?? ctx.lastIcm?.[field] ?? '');
+    }
+    const parts = trimmed.split('.');
     let val = ctx;
     for (const p of parts) val = val?.[p];
-    return val ?? '';
+    return String(val ?? '');
   });
 }
