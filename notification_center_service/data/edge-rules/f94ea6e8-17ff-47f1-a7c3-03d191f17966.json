@@ -16,11 +16,13 @@
   "actions": [
     {
       "actionType": "email",
-      "to": [],
-      "subject": "",
+      "to": [
+        "horea.breazu@gmail.com"
+      ],
+      "subject": "Trigger",
       "bodyTemplate": "{{#title}} was trigered"
     }
   ],
   "createdAt": "2026-05-17T18:22:42.881Z",
-  "updatedAt": "2026-05-19T21:53:55.926Z"
+  "updatedAt": "2026-05-19T22:08:41.184Z"
 }
