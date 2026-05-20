@@ -1,0 +1,24 @@
+[
+  {
+    "id": "978c8b7a-73e5-42f7-aa34-5325b1b78277",
+    "kind": "market",
+    "type": "info",
+    "title": "AAPL up 1.2%",
+    "body": "",
+    "source": "external",
+    "read": false,
+    "timestamp": "2026-05-17T22:04:14.225Z",
+    "ticker": "AAPL",
+    "exchange": "NASDAQ",
+    "price": 195.5,
+    "priceChange": null,
+    "priceChangePct": 1.2,
+    "volume": null,
+    "marketCap": null,
+    "high24h": null,
+    "low24h": null,
+    "currency": "USD",
+    "alertThreshold": null,
+    "meta": {}
+  }
+]

@@ -1,0 +1,551 @@
+{
+  "id": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b",
+  "name": "Intel Notification",
+  "description": "",
+  "createdAt": "2026-05-17T17:00:39.630Z",
+  "updatedAt": "2026-05-20T19:54:49.268Z",
+  "canvas": {
+    "nodes": [
+      {
+        "id": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+        "kind": "market",
+        "x": -199.56777896183095,
+        "y": 251.80832239758345,
+        "w": 302.5312016226806,
+        "h": 364,
+        "data": {
+          "inputs": 1,
+          "outputs": 1,
+          "ticker": "INITC",
+          "exchange": "NASDAQ",
+          "price": 123,
+          "priceChangePct": 23,
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "",
+          "icmType": "",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "Intel Stock",
+          "message": "",
+          "_testMode": true,
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
+        }
+      },
+      {
+        "id": "c695fd6a-1be8-4680-b517-7fa4545f7e37",
+        "kind": "news",
+        "x": -702.6635758443273,
+        "y": -64.62874722933589,
+        "w": 302.2836430863026,
+        "h": 329,
+        "data": {
+          "inputs": 1,
+          "outputs": 1,
+          "ticker": "",
+          "exchange": "",
+          "category": "Texh",
+          "source": "google.com",
+          "url": "google.com",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "",
+          "icmType": "",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "intel is coming back",
+          "message": "",
+          "_testMode": true,
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
+        }
+      },
+      {
+        "id": "d1063c22-0d38-4031-9d10-98665d8a1fa2",
+        "kind": "edgeRule",
+        "x": 398.37842294231046,
+        "y": 881.0000409442799,
+        "w": 272.3490324996578,
+        "h": 287,
+        "data": {
+          "inputs": 2,
+          "outputs": 1,
+          "_ruleId": "f94ea6e8-17ff-47f1-a7c3-03d191f17966",
+          "ticker": "",
+          "exchange": "",
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "Test Rule",
+          "icmType": "icm:general",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "",
+          "message": "",
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
+        }
+      },
+      {
+        "id": "e6e7dde1-2706-4e0c-a78a-0d8c8f05bd37",
+        "kind": "edgeRule",
+        "x": 427.8198490719536,
+        "y": 421.3370203049783,
+        "w": 276.89265876529146,
+        "h": 243.30407177135302,
+        "data": {
+          "inputs": 3,
+          "outputs": 2,
+          "ticker": "",
+          "exchange": "",
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "Triple output rule",
+          "icmType": "icm:market-update",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "",
+          "message": "",
+          "_createStub": false,
+          "_ruleId": "25a5e9a3-ab16-4a49-9ae1-acc3a4e575be",
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
+        }
+      },
+      {
+        "id": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+        "kind": "map",
+        "x": -728.7204295654135,
+        "y": 547.0125588850394,
+        "w": 333.9681138163319,
+        "h": 366,
+        "data": {
+          "inputs": 1,
+          "outputs": 1,
+          "ticker": "",
+          "exchange": "",
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "political",
+          "latitude": 54.67,
+          "longitude": 54.26,
+          "region": "IR",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "",
+          "icmType": "",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "Entered Region",
+          "message": "",
+          "_testMode": true,
+          "_testPayload": {
+            "eventCategory": "Iran",
+            "latitude": "23.45",
+            "longitude": "34.56",
+            "title": "Ship in iran zone",
+            "region": "IR"
+          },
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
+        }
+      },
+      {
+        "id": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+        "kind": "market",
+        "x": -175.72418004800542,
+        "y": 752.267051110523,
+        "w": 386.6348075972197,
+        "h": 397,
+        "data": {
+          "inputs": 2,
+          "outputs": 2,
+          "ticker": "AAPL",
+          "exchange": "NASDAQ",
+          "price": 123,
+          "priceChangePct": 22,
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "",
+          "question": "",
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "",
+          "icmType": "",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "Value has changed when",
+          "message": "",
+          "_testMode": true,
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
+        }
+      },
+      {
+        "id": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+        "kind": "polymarket",
+        "x": -719.8826331592713,
+        "y": 1029.6974745515442,
+        "w": 352.6053973511446,
+        "h": 311,
+        "data": {
+          "inputs": 1,
+          "outputs": 1,
+          "ticker": "",
+          "exchange": "",
+          "category": "",
+          "source": "",
+          "url": "",
+          "marketId": "11234",
+          "question": "is this actually happening",
+          "yesProbability": 10,
+          "noProbability": 90,
+          "eventCategory": "",
+          "region": "",
+          "template": "",
+          "channel": "",
+          "priority": 3,
+          "ruleName": "",
+          "icmType": "",
+          "count": 1,
+          "windowMs": 60000,
+          "title": "",
+          "message": "",
+          "_testMode": true,
+          "_testPayload": {
+            "marketId": "1123546",
+            "question": "Will the tanker survive",
+            "yesProbability": "0.7",
+            "noProbability": "0.3"
+          },
+          "_profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "0608049e-a4d3-45b8-a211-8d524ecbd2c5",
+        "fromNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+        "fromPortIdx": 0,
+        "toNodeId": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+        "toPortIdx": 0,
+        "meta": {
+          "label": "Entered Object",
+          "icmType": "icm:map",
+          "priority": 1,
+          "action": "",
+          "actionTarget": "",
+          "notes": "",
+          "triggerName": "",
+          "triggerPayload": [
+            {
+              "field": "latitude",
+              "targetField": "latitude",
+              "enabled": true,
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region"
+            },
+            {
+              "field": "longitude",
+              "targetField": "longitude",
+              "enabled": true,
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region"
+            },
+            {
+              "field": "region",
+              "targetField": "region",
+              "enabled": true,
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region"
+            }
+          ]
+        }
+      },
+      {
+        "id": "32a810c7-0020-45bc-89bf-24ee6fb7a36f",
+        "fromNodeId": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+        "fromPortIdx": 0,
+        "toNodeId": "e6e7dde1-2706-4e0c-a78a-0d8c8f05bd37",
+        "toPortIdx": 2,
+        "meta": {
+          "label": "Region + Market",
+          "icmType": "icm:region+market",
+          "priority": 1,
+          "action": "",
+          "actionTarget": "",
+          "notes": "",
+          "triggerName": "map-market-trigger",
+          "triggerPayload": [
+            {
+              "field": "exchange",
+              "targetField": "exchange",
+              "enabled": true,
+              "sourceNodeId": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+              "sourceNodeKind": "market",
+              "sourceNodeLabel": "Value has changed when"
+            },
+            {
+              "field": "price",
+              "targetField": "price",
+              "enabled": true,
+              "sourceNodeId": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+              "sourceNodeKind": "market",
+              "sourceNodeLabel": "Value has changed when"
+            },
+            {
+              "field": "title",
+              "targetField": "title",
+              "enabled": true,
+              "sourceNodeId": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+              "sourceNodeKind": "market",
+              "sourceNodeLabel": "Value has changed when"
+            },
+            {
+              "field": "latitude",
+              "targetField": "latitude",
+              "enabled": true,
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region"
+            },
+            {
+              "field": "longitude",
+              "targetField": "longitude",
+              "enabled": true,
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region"
+            },
+            {
+              "field": "region",
+              "targetField": "region",
+              "enabled": true,
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region"
+            }
+          ],
+          "outConditions": [
+            {
+              "field": "latitude",
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region",
+              "operator": ">",
+              "value": "30"
+            }
+          ]
+        }
+      },
+      {
+        "id": "3bbd4b23-ba01-4a15-b0b0-42e4961fac1c",
+        "fromNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+        "fromPortIdx": 0,
+        "toNodeId": "e6e7dde1-2706-4e0c-a78a-0d8c8f05bd37",
+        "toPortIdx": 1,
+        "meta": {
+          "label": "Stock Update",
+          "icmType": "icm:market-node",
+          "priority": 1,
+          "action": "",
+          "actionTarget": "",
+          "notes": "",
+          "triggerName": "Intel Trigger",
+          "triggerPayload": [
+            {
+              "field": "ticker",
+              "targetField": "ticker",
+              "enabled": true,
+              "sourceNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+              "sourceNodeKind": "market",
+              "sourceNodeLabel": "Intel Stock"
+            },
+            {
+              "field": "exchange",
+              "targetField": "exchange",
+              "enabled": true,
+              "sourceNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+              "sourceNodeKind": "market",
+              "sourceNodeLabel": "Intel Stock"
+            },
+            {
+              "field": "price",
+              "targetField": "price",
+              "enabled": true,
+              "sourceNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+              "sourceNodeKind": "market",
+              "sourceNodeLabel": "Intel Stock"
+            },
+            {
+              "field": "priceChangePct",
+              "targetField": "priceChangePct",
+              "enabled": true,
+              "sourceNodeId": "13dceda1-5376-4fdc-9253-b2f93a3d0370",
+              "sourceNodeKind": "market",
+              "sourceNodeLabel": "Intel Stock"
+            }
+          ]
+        }
+      },
+      {
+        "id": "e3cb029c-e663-4030-a542-47721452f4c7",
+        "fromNodeId": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+        "fromPortIdx": 1,
+        "toNodeId": "d1063c22-0d38-4031-9d10-98665d8a1fa2",
+        "toPortIdx": 0,
+        "meta": {
+          "label": "Stock Update",
+          "icmType": "icm:market-node",
+          "priority": 1,
+          "action": "",
+          "actionTarget": "",
+          "notes": "",
+          "triggerName": "Prio-title",
+          "triggerPayload": [
+            {
+              "field": "title",
+              "targetField": "title",
+              "enabled": true,
+              "sourceNodeId": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+              "sourceNodeKind": "market",
+              "sourceNodeLabel": "Value has changed when"
+            },
+            {
+              "field": "priority",
+              "targetField": "priority",
+              "enabled": true,
+              "sourceNodeId": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+              "sourceNodeKind": "market",
+              "sourceNodeLabel": "Value has changed when"
+            }
+          ],
+          "outConditions": [
+            {
+              "field": "latitude",
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region",
+              "operator": ">",
+              "value": "20"
+            },
+            {
+              "field": "longitude",
+              "sourceNodeId": "5f71febf-bbe3-42b3-8e2c-af9ca88676dc",
+              "sourceNodeKind": "map",
+              "sourceNodeLabel": "Entered Region",
+              "operator": "<",
+              "value": "35"
+            },
+            {
+              "field": "yesProbability",
+              "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+              "sourceNodeKind": "polymarket",
+              "sourceNodeLabel": "PolyMarket",
+              "operator": ">",
+              "value": "0.5"
+            },
+            {
+              "field": "noProbability",
+              "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+              "sourceNodeKind": "polymarket",
+              "sourceNodeLabel": "PolyMarket",
+              "operator": "<",
+              "value": "0.4"
+            }
+          ]
+        }
+      },
+      {
+        "id": "695bf44a-9698-429f-ba73-98e824039749",
+        "fromNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+        "fromPortIdx": 0,
+        "toNodeId": "0eda1960-ce19-43d0-988e-9cb61adc2839",
+        "toPortIdx": 1,
+        "meta": {
+          "label": "Will it happen?",
+          "icmType": "icm:poly-market",
+          "priority": 1,
+          "action": "",
+          "actionTarget": "",
+          "notes": "",
+          "triggerName": "PollyTrigger",
+          "triggerPayload": [
+            {
+              "field": "question",
+              "targetField": "question",
+              "enabled": true,
+              "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+              "sourceNodeKind": "polymarket",
+              "sourceNodeLabel": "PolyMarket"
+            },
+            {
+              "field": "yesProbability",
+              "targetField": "yesProbability",
+              "enabled": true,
+              "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+              "sourceNodeKind": "polymarket",
+              "sourceNodeLabel": "PolyMarket"
+            },
+            {
+              "field": "noProbability",
+              "targetField": "noProbability",
+              "enabled": true,
+              "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+              "sourceNodeKind": "polymarket",
+              "sourceNodeLabel": "PolyMarket"
+            },
+            {
+              "field": "priority",
+              "targetField": "priority",
+              "enabled": true,
+              "sourceNodeId": "fea88a8d-aa02-4c2b-971a-76f22386e066",
+              "sourceNodeKind": "polymarket",
+              "sourceNodeLabel": "PolyMarket"
+            }
+          ]
+        }
+      }
+    ],
+    "viewport": {
+      "x": 695.0226614997151,
+      "y": -95.87898290860915,
+      "zoom": 0.8680285158068434
+    },
+    "profileId": "1a8b3d7c-ff52-490f-8e57-c2dddc9a0b3b"
+  }
+}

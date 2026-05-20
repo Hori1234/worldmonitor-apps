@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Explorer</title>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── Header ────────────────────────────────────────────────────────────── -->
+  <header id="app-header">
+    <div class="header-left">
+      <span class="logo">⬡</span>
+      <span class="app-title">API Explorer</span>
+    </div>
+    <nav id="app-nav">
+      <button class="app-nav-btn active" data-pane="scraper">🕷 Scraper API</button>
+      <button class="app-nav-btn"        data-pane="kg">⬡ Knowledge Graph API</button>
+      <button class="app-nav-btn"        data-pane="nc">🔔 Notification Center API</button>
+    </nav>
+    <div class="header-right">
+      <span class="api-label">Scraper</span>
+      <span class="api-host">localhost:3737</span>
+      <span class="api-sep">·</span>
+      <span class="api-label">KG</span>
+      <span class="api-host">localhost:3738</span>
+      <span class="api-sep">·</span>
+      <span class="api-label">NC</span>
+      <span class="api-host">localhost:3003</span>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       PANE: Scraper API
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <div id="pane-scraper" class="app-pane active">
+    <div id="scraper-explorer" class="explorer-root">
+
+      <!-- Sidebar -->
+      <aside class="ex-sidebar">
+        <div class="ex-search-wrap">
+          <input id="scraper-search" type="search" placeholder="Filter endpoints…" autocomplete="off" />
+        </div>
+        <div id="scraper-list" class="ex-endpoint-list"></div>
+      </aside>
+
+      <!-- Main -->
+      <div class="ex-main">
+
+        <!-- Request -->
+        <div class="ex-request-section">
+          <div class="ex-url-row">
+            <span id="scraper-method" class="ex-method-badge">GET</span>
+            <input id="scraper-url" type="text" class="ex-url-input" spellcheck="false" />
+            <button id="scraper-send" class="btn btn-accent">Send</button>
+          </div>
+          <p id="scraper-desc" class="ex-desc">Select an endpoint from the sidebar.</p>
+
+          <div class="ex-req-tabs">
+            <button class="ex-req-tab-btn active" data-tab="params">Params</button>
+            <button class="ex-req-tab-btn"        data-tab="body">Body</button>
+          </div>
+          <div id="scraper-tab-params" class="ex-req-tab-pane ex-tab-params active">
+            <div id="scraper-params" class="ex-params-content"></div>
+          </div>
+          <div id="scraper-tab-body" class="ex-req-tab-pane ex-tab-body">
+            <textarea id="scraper-body" class="ex-body-area"
+              placeholder="JSON request body…" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Resize handle -->
+        <div class="ex-resize-handle"></div>
+
+        <!-- Response -->
+        <div class="ex-response-section">
+          <div class="ex-resp-header">
+            <span class="ex-resp-label">Response</span>
+            <span id="scraper-resp-status" class="ex-status-badge"></span>
+            <span id="scraper-resp-time"   class="ex-resp-time"></span>
+            <button id="scraper-copy-resp" class="btn btn-xs btn-ghost" title="Copy response">⎘</button>
+          </div>
+          <pre id="scraper-resp-body" class="ex-resp-body">Select an endpoint and hit Send.</pre>
+        </div>
+
+      </div><!-- /.ex-main -->
+    </div><!-- /#scraper-explorer -->
+  </div><!-- /#pane-scraper -->
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       PANE: Knowledge Graph API
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <div id="pane-kg" class="app-pane">
+    <div id="kg-explorer" class="explorer-root">
+
+      <!-- Sidebar -->
+      <aside class="ex-sidebar">
+        <div class="ex-search-wrap">
+          <input id="kg-search" type="search" placeholder="Filter endpoints…" autocomplete="off" />
+        </div>
+        <div id="kg-list" class="ex-endpoint-list"></div>
+      </aside>
+
+      <!-- Main -->
+      <div class="ex-main">
+
+        <!-- Request -->
+        <div class="ex-request-section">
+          <div class="ex-url-row">
+            <span id="kg-method" class="ex-method-badge">GET</span>
+            <input id="kg-url" type="text" class="ex-url-input" spellcheck="false" />
+            <button id="kg-send" class="btn btn-accent">Send</button>
+          </div>
+          <p id="kg-desc" class="ex-desc">Select an endpoint from the sidebar.</p>
+
+          <div class="ex-req-tabs">
+            <button class="ex-req-tab-btn active" data-tab="params">Params</button>
+            <button class="ex-req-tab-btn"        data-tab="body">Body</button>
+          </div>
+          <div id="kg-tab-params" class="ex-req-tab-pane ex-tab-params active">
+            <div id="kg-params" class="ex-params-content"></div>
+          </div>
+          <div id="kg-tab-body" class="ex-req-tab-pane ex-tab-body">
+            <textarea id="kg-body" class="ex-body-area"
+              placeholder="JSON request body…" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Resize handle -->
+        <div class="ex-resize-handle"></div>
+
+        <!-- Response -->
+        <div class="ex-response-section">
+          <div class="ex-resp-header">
+            <span class="ex-resp-label">Response</span>
+            <span id="kg-resp-status" class="ex-status-badge"></span>
+            <span id="kg-resp-time"   class="ex-resp-time"></span>
+            <button id="kg-copy-resp" class="btn btn-xs btn-ghost" title="Copy response">⎘</button>
+          </div>
+          <pre id="kg-resp-body" class="ex-resp-body">Select an endpoint and hit Send.</pre>
+        </div>
+
+      </div><!-- /.ex-main -->
+    </div><!-- /#kg-explorer -->
+  </div><!-- /#pane-kg -->
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       PANE: Notification Center API
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <div id="pane-nc" class="app-pane">
+    <div id="nc-explorer" class="explorer-root">
+
+      <!-- Sidebar -->
+      <aside class="ex-sidebar">
+        <div class="ex-search-wrap">
+          <input id="nc-search" type="search" placeholder="Filter endpoints…" autocomplete="off" />
+        </div>
+        <div id="nc-list" class="ex-endpoint-list"></div>
+      </aside>
+
+      <!-- Main -->
+      <div class="ex-main">
+
+        <!-- Request -->
+        <div class="ex-request-section">
+          <div class="ex-url-row">
+            <span id="nc-method" class="ex-method-badge">GET</span>
+            <input id="nc-url" type="text" class="ex-url-input" spellcheck="false" />
+            <button id="nc-send" class="btn btn-accent">Send</button>
+          </div>
+          <p id="nc-desc" class="ex-desc">Select an endpoint from the sidebar.</p>
+
+          <div class="ex-req-tabs">
+            <button class="ex-req-tab-btn active" data-tab="params">Params</button>
+            <button class="ex-req-tab-btn"        data-tab="body">Body</button>
+          </div>
+          <div id="nc-tab-params" class="ex-req-tab-pane ex-tab-params active">
+            <div id="nc-params" class="ex-params-content"></div>
+          </div>
+          <div id="nc-tab-body" class="ex-req-tab-pane ex-tab-body">
+            <textarea id="nc-body" class="ex-body-area"
+              placeholder="JSON request body…" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Resize handle -->
+        <div class="ex-resize-handle"></div>
+
+        <!-- Response -->
+        <div class="ex-response-section">
+          <div class="ex-resp-header">
+            <span class="ex-resp-label">Response</span>
+            <span id="nc-resp-status" class="ex-status-badge"></span>
+            <span id="nc-resp-time"   class="ex-resp-time"></span>
+            <button id="nc-copy-resp" class="btn btn-xs btn-ghost" title="Copy response">⎘</button>
+          </div>
+          <pre id="nc-resp-body" class="ex-resp-body">Select an endpoint and hit Send.</pre>
+        </div>
+
+      </div><!-- /.ex-main -->
+    </div><!-- /#nc-explorer -->
+  </div><!-- /#pane-nc -->
+
+</div><!-- /#app -->
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

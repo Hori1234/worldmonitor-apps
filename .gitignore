@@ -1,1 +1,4 @@
 node_modules
+
+notification_center_service/data/
+.env

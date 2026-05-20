@@ -1,0 +1,28 @@
+{
+  "id": "f94ea6e8-17ff-47f1-a7c3-03d191f17966",
+  "name": "Test Rule",
+  "enabled": true,
+  "description": "Created from canvas builder.",
+  "trigger": {
+    "icmType": "icm:general",
+    "filter": null,
+    "threshold": {
+      "count": 1,
+      "windowMs": 60000,
+      "resetAfterFire": true
+    },
+    "inputConditions": []
+  },
+  "actions": [
+    {
+      "actionType": "email",
+      "to": [
+        "horea.breazu@gmail.com"
+      ],
+      "subject": "Trigger",
+      "bodyTemplate": "{{#title}} was trigered"
+    }
+  ],
+  "createdAt": "2026-05-17T18:22:42.881Z",
+  "updatedAt": "2026-05-20T20:36:26.093Z"
+}

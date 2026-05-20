@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scraper Dashboard</title>
+    <title>Main Dashboard</title>
   </head>
   <body>
 
@@ -11,9 +11,13 @@
     <header id="app-header">
       <div class="header-left">
         <span class="logo">🕷</span>
-        <span class="app-title">Scraper Dashboard</span>
+        <span class="app-title">Knowledge Dashboard</span>
       </div>
+      
       <div class="header-right">
+        <a class="btn btn-ghost btn-sm header-ext-link" href="http://localhost:5175" target="_blank" rel="noopener" title="Open API Explorer">⚡ API Explorer ↗</a>
+        <a class="btn btn-ghost btn-sm header-ext-link" href="http://localhost:5176" target="_blank" rel="noopener" title="Open Notification Center">🔔 Notification Center ↗</a>
+        <a class="btn btn-ghost btn-sm header-ext-link" href="http://localhost:5174" target="_blank" rel="noopener" title="Open KG Explorer">⬡ KG Explorer ↗</a>
         <div class="api-url-row">
           <span class="api-label">API</span>
           <input
@@ -38,16 +42,32 @@
 
     <!-- ── Stats bar ──────────────────────────────────────── -->
     <div id="stats-bar">
-      <span class="stat"><strong id="stat-files">—</strong> files</span>
-      <span class="stat"><strong id="stat-categories">—</strong> categories</span>
-      <span class="stat"><strong id="stat-jobs-today">—</strong> jobs today</span>
+      <div class="stats-bar-left">
+        <span class="stat"><strong id="stat-files">—</strong> files</span>
+        <span class="stat"><strong id="stat-categories">—</strong> categories</span>
+        <span class="stat"><strong id="stat-jobs-today">—</strong> jobs today</span>
+      </div>
+      <div class="svc-pills">
+        <a class="svc-pill checking" id="pill-scraper-svc" href="http://localhost:3737" target="_blank" title="Scraper service API">
+          <span class="dot"></span>
+          <span>Scraper API :3737</span>
+        </a>
+        <a class="svc-pill checking" id="pill-kg-svc" href="http://localhost:3738" target="_blank" title="Knowledge Graph service API">
+          <span class="dot"></span>
+          <span>KG API :3738</span>
+        </a>
+        <a class="svc-pill checking" id="pill-nc-svc" href="http://localhost:3003" target="_blank" title="Notification Center service API">
+          <span class="dot"></span>
+          <span>NC API :3003</span>
+        </a>
+      </div>
     </div>
 
     <!-- ── Top-level app navigation ─────────────────────── -->
     <nav id="app-nav">
       <button class="app-nav-btn active" data-page="dashboard">Dashboard</button>
-      <button class="app-nav-btn" data-page="explorer">API Explorer</button>
       <button class="app-nav-btn" data-page="kg">⬡ Knowledge Graph</button>
+      <button class="app-nav-btn" data-page="nc">🔔 NC Canvas</button>
     </nav>
 
     <!-- ── Page: Dashboard ───────────────────────────────── -->
@@ -216,39 +236,6 @@
     </main>
     </div><!-- /#page-dashboard -->
 
-    <!-- ── Page: API Explorer ────────────────────────────── -->
-    <div id="page-explorer" class="app-page">
-      <div class="ex-layout">
-
-        <!-- Sidebar -->
-        <div class="ex-sidebar">
-          <div class="ex-sidebar-search">
-            <input id="ex-search" type="search" placeholder="Search endpoints…" />
-          </div>
-          <div id="ex-sidebar-list" class="ex-sidebar-list"></div>
-        </div>
-
-        <!-- Main area -->
-        <div class="ex-main">
-
-          <!-- Request -->
-          <div class="ex-section ex-request-section">
-            <div class="ex-section-label">REQUEST</div>
-            <div id="ex-request-panel"></div>
-          </div>
-
-          <!-- Response -->
-          <div class="ex-section ex-response-section">
-            <div class="ex-section-label">RESPONSE</div>
-            <div id="ex-response-panel">
-              <p class="ex-res-placeholder">Send a request to see the response here.</p>
-            </div>
-          </div>
-
-        </div><!-- /.ex-main -->
-      </div><!-- /.ex-layout -->
-    </div><!-- /#page-explorer -->
-
     <!-- ── Page: Knowledge Graph ─────────────────────── -->
     <div id="page-kg" class="app-page">
       <iframe
@@ -259,6 +246,17 @@
         allow="clipboard-write"
       ></iframe>
     </div><!-- /#page-kg -->
+
+    <!-- ── Page: NC Canvas ───────────────────────── -->
+    <div id="page-nc" class="app-page">
+      <iframe
+        id="nc-frame"
+        src="http://localhost:5176"
+        style="width:100%;height:100%;border:none;display:block;"
+        title="Notification Center Canvas"
+        allow="clipboard-write"
+      ></iframe>
+    </div><!-- /#page-nc -->
 
     <!-- ── KG Send Modal ───────────────────────────── -->
     <div id="modal-kg-send" class="kg-modal">
@@ -386,59 +384,204 @@
       </div>
     </div>
 
-    <!-- ── Settings modal ────────────────────────────────── -->
+    <!-- ── Settings panel ────────────────────────────────── -->
     <div id="settings-modal">
       <div id="settings-overlay"></div>
       <div class="settings-dialog">
+
         <div class="settings-dialog-header">
-          <span>Settings</span>
+          <span>⚙ Settings</span>
           <button id="settings-close-btn" class="btn btn-ghost btn-xs">✕</button>
         </div>
-        <form id="settings-form" autocomplete="off">
-          <fieldset class="settings-section">
-            <legend>Server</legend>
-            <label>Port <input type="number" name="PORT" min="1" max="65535" /></label>
-            <label>CORS Origin <input type="text" name="CORS_ORIGIN" /></label>
-          </fieldset>
-          <fieldset class="settings-section">
-            <legend>Output</legend>
-            <label>Output Directory <input type="text" name="OUTPUT_DIR" /></label>
-          </fieldset>
-          <fieldset class="settings-section">
-            <legend>Scraping</legend>
-            <label>
-              Max Concurrency
-              <input type="range" name="MAX_CONCURRENCY" min="1" max="10" step="1" />
-            </label>
-            <label>Browser Timeout (ms) <input type="number" name="BROWSER_TIMEOUT" min="5000" /></label>
-            <label>Max Retries <input type="number" name="MAX_RETRIES" min="0" max="10" /></label>
-            <label>Log Level
-              <select name="LOG_LEVEL">
-                <option value="debug">debug</option>
-                <option value="info">info</option>
-                <option value="warn">warn</option>
-                <option value="error">error</option>
-              </select>
-            </label>
-          </fieldset>
-          <fieldset class="settings-section">
-            <legend>API Keys</legend>
-            <label>
-              Firecrawl API Key
-              <div class="api-key-row">
-                <input type="password" name="FIRECRAWL_API_KEY" autocomplete="new-password" />
-                <button type="button" id="test-firecrawl-btn" class="btn btn-ghost btn-xs">Test Key</button>
-              </div>
-            </label>
-          </fieldset>
-          <fieldset class="settings-section">
-            <legend>Proxy</legend>
-            <label>Proxy URL <input type="text" name="PROXY_URL" placeholder="http://proxy:8080" /></label>
-          </fieldset>
-        </form>
+
+        <!-- Service tab bar -->
+        <div class="stabs">
+          <button class="stab active" data-stab="scraper">🕷 Scraper</button>
+          <button class="stab" data-stab="nc">🔔 Notifications</button>
+          <button class="stab" data-stab="kg">⬡ Knowledge Graph</button>
+        </div>
+
+        <div class="settings-body">
+
+          <!-- ── Tab 1: Scraper Service ─────────────────────── -->
+          <div class="stab-pane active" id="stab-scraper">
+            <form id="settings-form" autocomplete="off">
+              <fieldset class="settings-section">
+                <legend>Server</legend>
+                <label>Port
+                  <input type="number" name="PORT" data-svc="scraper" min="1" max="65535" />
+                </label>
+                <label>CORS Origin
+                  <input type="text" name="CORS_ORIGIN" data-svc="scraper" placeholder="*" />
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-scraper-server-btn">Test Connection</button>
+                  <span class="section-test-result" id="test-scraper-server-result"></span>
+                </div>
+              </fieldset>
+              <fieldset class="settings-section">
+                <legend>Output</legend>
+                <label>Output Directory
+                  <input type="text" name="OUTPUT_DIR" data-svc="scraper" placeholder="./markdown" />
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="browse-scraper-output-btn">&#128193; Browse</button>
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-scraper-output-btn">Test Directory</button>
+                  <span class="section-test-result" id="test-scraper-output-result"></span>
+                </div>
+              </fieldset>
+              <fieldset class="settings-section">
+                <legend>Scraping</legend>
+                <label>Max Concurrency
+                  <input type="range" name="MAX_CONCURRENCY" data-svc="scraper" min="1" max="10" step="1" />
+                </label>
+                <label>Browser Timeout (ms)
+                  <input type="number" name="BROWSER_TIMEOUT" data-svc="scraper" min="5000" />
+                </label>
+                <label>Max Retries
+                  <input type="number" name="MAX_RETRIES" data-svc="scraper" min="0" max="10" />
+                </label>
+                <label>Log Level
+                  <select name="LOG_LEVEL" data-svc="scraper">
+                    <option value="debug">debug</option>
+                    <option value="info">info</option>
+                    <option value="warn">warn</option>
+                    <option value="error">error</option>
+                  </select>
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-scraper-scraping-btn">Test Service</button>
+                  <span class="section-test-result" id="test-scraper-scraping-result"></span>
+                </div>
+              </fieldset>
+              <fieldset class="settings-section">
+                <legend>API Keys</legend>
+                <label>Firecrawl API Key
+                  <div class="api-key-row">
+                    <input type="password" name="FIRECRAWL_API_KEY" data-svc="scraper" autocomplete="new-password" />
+                    <button type="button" id="test-firecrawl-btn" class="btn btn-ghost btn-xs">Test Key</button>
+                  </div>
+                </label>
+                <span class="section-test-result" id="test-scraper-apikey-result"></span>
+              </fieldset>
+              <fieldset class="settings-section">
+                <legend>Proxy</legend>
+                <label>Proxy URL
+                  <input type="text" name="PROXY_URL" data-svc="scraper" placeholder="http://proxy:8080" />
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-scraper-proxy-btn">Test Service</button>
+                  <span class="section-test-result" id="test-scraper-proxy-result"></span>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+
+          <!-- ── Tab 2: Notification Center ───────────────────── -->
+          <div class="stab-pane" id="stab-nc">
+            <form id="settings-form-nc" autocomplete="off">
+              <p class="settings-hint">💾 Stored locally. Copy values to <code>notification_center_service/.env</code> and restart.</p>
+              <fieldset class="settings-section">
+                <legend>Server</legend>
+                <label>Port
+                  <input type="number" name="NC_PORT" data-svc="nc" min="1" max="65535" placeholder="3003" />
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-nc-server-btn">Test Connection</button>
+                  <span class="section-test-result" id="test-nc-server-result"></span>
+                </div>
+              </fieldset>
+              <fieldset class="settings-section">
+                <legend>Storage</legend>
+                <label>Max Stored Notifications
+                  <input type="number" name="MAX_STORED" data-svc="nc" min="10" placeholder="500" />
+                </label>
+                <label>Retention Days
+                  <input type="number" name="RETENTION_DAYS" data-svc="nc" min="1" placeholder="7" />
+                </label>
+                <label class="settings-toggle">
+                  <input type="checkbox" name="EDGE_RULES_PERSIST" data-svc="nc" /> Persist Edge Rules
+                </label>
+                <label class="settings-toggle">
+                  <input type="checkbox" name="PROFILES_PERSIST" data-svc="nc" /> Persist Profiles
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-nc-storage-btn">Test Storage</button>
+                  <span class="section-test-result" id="test-nc-storage-result"></span>
+                </div>
+              </fieldset>
+              <fieldset class="settings-section">
+                <legend>Email SMTP</legend>
+                <label>SMTP Host
+                  <input type="text" name="EMAIL_SMTP_HOST" data-svc="nc" placeholder="smtp.gmail.com" />
+                </label>
+                <label>SMTP Port
+                  <input type="number" name="EMAIL_SMTP_PORT" data-svc="nc" placeholder="587" />
+                </label>
+                <label>SMTP User
+                  <input type="text" name="EMAIL_SMTP_USER" data-svc="nc" placeholder="user@example.com" />
+                </label>
+                <label>SMTP Password
+                  <input type="password" name="EMAIL_SMTP_PASS" data-svc="nc" autocomplete="new-password" />
+                </label>
+                <label>From Address
+                  <input type="email" name="EMAIL_FROM" data-svc="nc" placeholder="alerts@example.com" />
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-nc-smtp-btn">Test SMTP</button>
+                  <span class="section-test-result" id="test-nc-smtp-result"></span>
+                </div>
+              </fieldset>
+              <fieldset class="settings-section">
+                <legend>Webhooks &amp; Forwarding</legend>
+                <label>Webhook Timeout (ms)
+                  <input type="number" name="WEBHOOK_TIMEOUT_MS" data-svc="nc" min="1000" placeholder="5000" />
+                </label>
+                <label class="settings-toggle">
+                  <input type="checkbox" name="ICM_FORWARD_WS" data-svc="nc" /> Forward ICM over WebSocket
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-nc-webhook-btn">Test Service</button>
+                  <span class="section-test-result" id="test-nc-webhook-result"></span>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+
+          <!-- ── Tab 3: Knowledge Graph ─────────────────────── -->
+          <div class="stab-pane" id="stab-kg">
+            <form id="settings-form-kg" autocomplete="off">
+              <p class="settings-hint">💾 Stored locally. Copy values to <code>knowledge_graph_service/.env</code> and restart.</p>
+              <fieldset class="settings-section">
+                <legend>Server</legend>
+                <label>Port
+                  <input type="number" name="KG_PORT" data-svc="kg" min="1" max="65535" placeholder="3738" />
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-kg-server-btn">Test Connection</button>
+                  <span class="section-test-result" id="test-kg-server-result"></span>
+                </div>
+              </fieldset>
+              <fieldset class="settings-section">
+                <legend>Data</legend>
+                <label>Data Directory
+                  <input type="text" name="KG_DATA_DIR" data-svc="kg" placeholder="./data" />
+                </label>
+                <div class="section-test-row">
+                  <button type="button" class="btn btn-ghost btn-xs" id="browse-kg-data-btn">&#128193; Browse</button>
+                  <button type="button" class="btn btn-ghost btn-xs" id="test-kg-data-btn">Test Data Dir</button>
+                  <span class="section-test-result" id="test-kg-data-result"></span>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+
+        </div><!-- /.settings-body -->
+
         <div class="settings-dialog-footer">
-          <button id="settings-reset-btn"  class="btn btn-ghost btn-sm">↺ Reload</button>
-          <button id="settings-save-btn"   class="btn btn-primary btn-sm">Save</button>
+          <span id="settings-save-msg"></span>
+          <button id="settings-reset-btn" class="btn btn-ghost btn-sm">↺ Reload</button>
+          <button id="settings-save-btn"  class="btn btn-primary btn-sm">Save</button>
         </div>
       </div>
     </div>

@@ -8,7 +8,7 @@ import { toast }        from './toast.js';
 import { initFileBrowser, getCurrentRaw } from './filebrowser.js';
 import { initNotifications, addNotification } from './notifications.js';
 import { initSettings } from './settings.js';
-import { initExplorer } from './api-explorer.js';
+
 
 // ── Top-level page navigation ────────────────────────────────────────────
 
@@ -51,6 +51,31 @@ async function checkHealth() {
     badge.className  = 'health-badge error';
     text.textContent = 'Offline';
   }
+}
+
+// ── Service pill health checks ────────────────────────────────────────────────
+
+const SVC_PILLS = [
+  { id: 'scraper-svc', url: 'http://localhost:3737/api/health' },
+  { id: 'kg-svc',      url: 'http://localhost:3738/health' },
+  { id: 'nc-svc',      url: 'http://localhost:3003/health' },
+];
+
+async function checkSvcPill(svc) {
+  const pill = document.getElementById('pill-' + svc.id);
+  if (!pill) return;
+  try {
+    const res = await fetch(svc.url, { signal: AbortSignal.timeout(3000) });
+    pill.classList.remove('checking', 'err');
+    pill.classList.add(res.ok ? 'ok' : 'err');
+  } catch {
+    pill.classList.remove('checking', 'ok');
+    pill.classList.add('err');
+  }
+}
+
+function checkAllSvcPills() {
+  SVC_PILLS.forEach(checkSvcPill);
 }
 
 // ── Copy buttons ──────────────────────────────────────────────────────────────
@@ -158,7 +183,6 @@ initNotifications((cb) => {
   document.addEventListener('ws:event', (e) => cb(e.detail));
 });
 initSettings();
-initExplorer();
 initWebSocket();
 initDrawerClose();
 checkHealth();
@@ -172,3 +196,7 @@ document.getElementById('clear-done-btn')
 // Health check on load and every 15 s
 checkHealth();
 setInterval(checkHealth, 15_000);
+
+// Service pill health checks on load and every 15 s
+checkAllSvcPills();
+setInterval(checkAllSvcPills, 15_000);

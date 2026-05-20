@@ -131,27 +131,21 @@
           <span class="dot"></span>
           <span>KG API :3738</span>
         </a>
+        <a class="svc-pill checking" id="pill-nc-svc" href="http://localhost:3003" target="_blank" title="Notification Center service API">
+          <span class="dot"></span>
+          <span>NC API :3003</span>
+        </a>
       </div>
 
-      <!-- Quick open links -->
+      <!-- Quick open links: Scraper | API Explorer | NC | KG -->
       <a class="btn-open" href="http://localhost:5173" target="_blank" title="Open Scraper UI in new tab">↗ :5173</a>
+      <a class="btn-open" href="http://localhost:5175" target="_blank" title="Open API Explorer in new tab">↗ :5175</a>
+      <a class="btn-open" href="http://localhost:5176" target="_blank" title="Open Notification Center in new tab">🔔 :5176</a>
       <a class="btn-open" href="http://localhost:5174" target="_blank" title="Open KG UI in new tab">↗ :5174</a>
     </div>
   </header>
 
-  <!-- ── Tab navigation ──────────────────────────────────────────────── -->
-  <nav id="root-nav">
-    <button class="root-nav-btn active" data-frame="scraper">
-      <span class="nav-icon">🕷</span>
-      <span class="nav-label">Scraper Dashboard</span>
-      <span class="nav-port">:5173</span>
-    </button>
-    <button class="root-nav-btn" data-frame="kg">
-      <span class="nav-icon">⬡</span>
-      <span class="nav-label">Knowledge Graph</span>
-      <span class="nav-port">:5174</span>
-    </button>
-  </nav>
+  
 
   <!-- ── Frame area ───────────────────────────────────────────────────── -->
   <div id="frame-area">
@@ -184,6 +178,20 @@
       </div>
     </div>
 
+    <!-- Notification Center Canvas -->
+    <div class="app-frame" id="frame-nc" data-url="http://localhost:5176">
+      <iframe src="http://localhost:5176" title="Notification Center Canvas" id="iframe-nc"></iframe>
+      <div class="frame-offline">
+        <div class="offline-icon">🔔</div>
+        <div class="offline-title">Notification Center is offline</div>
+        <div class="offline-url">http://localhost:5176</div>
+        <p style="max-width:320px;color:var(--text-3);font-size:12px;">
+          Run <code style="background:var(--bg-3);padding:2px 6px;border-radius:4px;">npm run dev -w notification_center_component</code> to start it.
+        </p>
+        <button class="btn-retry" data-target="nc">↻ Retry</button>
+      </div>
+    </div>
+
   </div><!-- /#frame-area -->
 </div><!-- /#root-app -->
 
@@ -212,13 +220,15 @@
 
   // ── Service health checks ──────────────────────────────────────────────
   const SERVICES = [
-    { id: 'scraper-svc', url: 'http://localhost:3737/health',   frameId: 'scraper' },
-    { id: 'kg-svc',      url: 'http://localhost:3738/health',   frameId: 'kg'      },
+    { id: 'scraper-svc', url: 'http://localhost:3737/api/health', frameId: 'scraper' },
+    { id: 'kg-svc',      url: 'http://localhost:3738/health', frameId: 'kg'      },
+    { id: 'nc-svc',      url: 'http://localhost:3003/health', frameId: 'nc'      },
   ];
 
   const FRAMES = [
     { id: 'scraper', url: 'http://localhost:5173' },
     { id: 'kg',      url: 'http://localhost:5174' },
+    { id: 'nc',      url: 'http://localhost:5176' },
   ];
 
   async function checkService(svc) {
