@@ -19,6 +19,7 @@
       <button class="app-nav-btn active" data-pane="scraper">🕷 Scraper API</button>
       <button class="app-nav-btn"        data-pane="kg">⬡ Knowledge Graph API</button>
       <button class="app-nav-btn"        data-pane="nc">🔔 Notification Center API</button>
+      <button class="app-nav-btn"        data-pane="graphify">🧠 Graphify KG API</button>
     </nav>
     <div class="header-right">
       <span class="api-label">Scraper</span>
@@ -29,6 +30,9 @@
       <span class="api-sep">·</span>
       <span class="api-label">NC</span>
       <span class="api-host">localhost:3003</span>
+      <span class="api-sep">·</span>
+      <span class="api-label">Graphify</span>
+      <span class="api-host">localhost:3740</span>
     </div>
   </header>
 
@@ -202,6 +206,63 @@
       </div><!-- /.ex-main -->
     </div><!-- /#nc-explorer -->
   </div><!-- /#pane-nc -->
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       PANE: Graphify Knowledge Graphs API
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <div id="pane-graphify" class="app-pane">
+    <div id="graphify-explorer" class="explorer-root">
+
+      <!-- Sidebar -->
+      <aside class="ex-sidebar">
+        <div class="ex-search-wrap">
+          <input id="graphify-search" type="search" placeholder="Filter endpoints…" autocomplete="off" />
+        </div>
+        <div id="graphify-list" class="ex-endpoint-list"></div>
+      </aside>
+
+      <!-- Main -->
+      <div class="ex-main">
+
+        <!-- Request -->
+        <div class="ex-request-section">
+          <div class="ex-url-row">
+            <span id="graphify-method" class="ex-method-badge">GET</span>
+            <input id="graphify-url" type="text" class="ex-url-input" spellcheck="false" />
+            <button id="graphify-send" class="btn btn-accent">Send</button>
+          </div>
+          <p id="graphify-desc" class="ex-desc">Select an endpoint from the sidebar.</p>
+
+          <div class="ex-req-tabs">
+            <button class="ex-req-tab-btn active" data-tab="params">Params</button>
+            <button class="ex-req-tab-btn"        data-tab="body">Body</button>
+          </div>
+          <div id="graphify-tab-params" class="ex-req-tab-pane ex-tab-params active">
+            <div id="graphify-params" class="ex-params-content"></div>
+          </div>
+          <div id="graphify-tab-body" class="ex-req-tab-pane ex-tab-body">
+            <textarea id="graphify-body" class="ex-body-area"
+              placeholder="JSON request body…" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Resize handle -->
+        <div class="ex-resize-handle"></div>
+
+        <!-- Response -->
+        <div class="ex-response-section">
+          <div class="ex-resp-header">
+            <span class="ex-resp-label">Response</span>
+            <span id="graphify-resp-status" class="ex-status-badge"></span>
+            <span id="graphify-resp-time"   class="ex-resp-time"></span>
+            <button id="graphify-copy-resp" class="btn btn-xs btn-ghost" title="Copy response">⎘</button>
+          </div>
+          <pre id="graphify-resp-body" class="ex-resp-body">Select an endpoint and hit Send.</pre>
+        </div>
+
+      </div><!-- /.ex-main -->
+    </div><!-- /#graphify-explorer -->
+  </div><!-- /#pane-graphify -->
 
 </div><!-- /#app -->
 

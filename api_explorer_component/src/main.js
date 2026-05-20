@@ -1,8 +1,9 @@
 import './style.css';
-import { SCRAPER_ENDPOINTS } from './endpoints-scraper.js';
-import { KG_ENDPOINTS }      from './endpoints-kg.js';
-import { NC_ENDPOINTS }      from './endpoints-nc.js';
-import { createExplorer }    from './explorer.js';
+import { SCRAPER_ENDPOINTS }   from './endpoints-scraper.js';
+import { KG_ENDPOINTS }         from './endpoints-kg.js';
+import { NC_ENDPOINTS }         from './endpoints-nc.js';
+import { GRAPHIFY_ENDPOINTS }   from './endpoints-graphify.js';
+import { createExplorer }       from './explorer.js';
 
 // ── Top-level pane switching ──────────────────────────────────────────────────
 
@@ -34,4 +35,10 @@ createExplorer({
   prefix:    'nc',
   endpoints: NC_ENDPOINTS,
   urlPrefix: '/api/nc',
+});
+
+createExplorer({
+  prefix:    'graphify',
+  endpoints: GRAPHIFY_ENDPOINTS,
+  urlPrefix: '/api/graphify',
 });

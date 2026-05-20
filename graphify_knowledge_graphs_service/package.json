@@ -1,0 +1,20 @@
+{
+  "name": "graphify-knowledge-graphs-service",
+  "version": "1.0.0",
+  "description": "REST API service for managing Graphify knowledge graphs stored in data/",
+  "type": "module",
+  "main": "graphify_knowledge_graphs_api.js",
+  "scripts": {
+    "start": "node graphify_knowledge_graphs_api.js",
+    "dev": "node --watch graphify_knowledge_graphs_api.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.1.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -16,6 +16,21 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/nc/, ''),
       },
+      // Graphify Knowledge Graphs service — before the generic /api rule
+      '/api/graphify': {
+        target: 'http://localhost:3740',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/graphify/, ''),
+        // Without this handler, Vite's SPA fallback serves index.html for
+        // failed GET requests (connection refused), which looks like the
+        // explorer returning HTML instead of JSON.
+        configure: (proxy) => {
+          proxy.on('error', (_err, _req, res) => {
+            res.writeHead(503, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: false, error: 'Graphify KG service unavailable (localhost:3740)' }));
+          });
+        },
+      },
       // Scraper service
       '/api': {
         target: 'http://localhost:3737',
