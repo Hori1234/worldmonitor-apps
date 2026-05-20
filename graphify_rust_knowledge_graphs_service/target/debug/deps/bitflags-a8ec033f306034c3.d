@@ -1,0 +1,11 @@
+D:\Github\worldmonitor-apps\graphify_rust_knowledge_graphs_service\target\debug\deps\bitflags-a8ec033f306034c3.d: C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\lib.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\iter.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\parser.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\traits.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\public.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\internal.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\external.rs
+
+D:\Github\worldmonitor-apps\graphify_rust_knowledge_graphs_service\target\debug\deps\libbitflags-a8ec033f306034c3.rmeta: C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\lib.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\iter.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\parser.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\traits.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\public.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\internal.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\external.rs
+
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\lib.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\iter.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\parser.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\traits.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\public.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\internal.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bitflags-2.11.1\src\external.rs:

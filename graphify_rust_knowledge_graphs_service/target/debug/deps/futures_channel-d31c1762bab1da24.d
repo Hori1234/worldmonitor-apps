@@ -1,0 +1,9 @@
+D:\Github\worldmonitor-apps\graphify_rust_knowledge_graphs_service\target\debug\deps\futures_channel-d31c1762bab1da24.d: C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\lib.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\lock.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\mpsc\mod.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\mpsc\queue.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\oneshot.rs
+
+D:\Github\worldmonitor-apps\graphify_rust_knowledge_graphs_service\target\debug\deps\libfutures_channel-d31c1762bab1da24.rmeta: C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\lib.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\lock.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\mpsc\mod.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\mpsc\queue.rs C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\oneshot.rs
+
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\lib.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\lock.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\mpsc\mod.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\mpsc\queue.rs:
+C:\Users\swhyo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-channel-0.3.32\src\oneshot.rs:
