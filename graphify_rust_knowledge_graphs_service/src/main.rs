@@ -68,7 +68,7 @@ async fn main() {
     let port: u16 = std::env::var("PORT")
         .ok()
         .and_then(|p| p.parse().ok())
-        .unwrap_or(3000);
+        .unwrap_or(3741);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("Graphify Knowledge Graph Service listening on http://{}", addr);

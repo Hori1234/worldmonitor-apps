@@ -38,7 +38,8 @@ pub async fn build(graph_dir: &Path, opts: BuildOptions) -> Result<String, AppEr
         .arg("--path")
         .arg(graph_dir)
         .arg("--output")
-        .arg(&output_dir);
+        .arg(&output_dir)
+        .current_dir(graph_dir); // graphify.toml is resolved from CWD
 
     if !opts.use_llm {
         cmd.arg("--no-llm");
