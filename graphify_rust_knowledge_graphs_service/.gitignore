@@ -1,0 +1,24 @@
+# Rust build output
+/target/
+Cargo.lock
+
+# ── graphify-rs output (generated, never commit) ──────────────────────────────
+# Each graph's built output lives in data/<name>/graphify-out/
+**/graphify-out/
+
+# ── Secrets & environment ──────────────────────────────────────────────────────
+.env
+*.env
+!.env.example
+
+# ── OS noise ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor / IDE ──────────────────────────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.suo
+*.user
