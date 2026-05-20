@@ -2,6 +2,7 @@ import { Router }          from 'express';
 import rateLimit           from 'express-rate-limit';
 import fs                  from 'fs';
 import path                from 'path';
+import { spawnSync }       from 'child_process';
 import { ZipArchive }      from 'archiver';
 import Parser              from 'rss-parser';
 import { createJob, getJob, listJobs, cancelJob } from './markdown_html_scraper_jobs.js';
@@ -71,10 +72,54 @@ function validateJobsArray(jobs) {
   return null;
 }
 
+// ── OS Directory Picker (Windows: PowerShell FolderBrowserDialog) ────────────
+
+router.get('/browse-directory', (req, res) => {
+  const initial = req.query.initial || '';
+  const ps = [
+    'Add-Type -AssemblyName System.Windows.Forms;',
+    '$f = New-Object System.Windows.Forms.FolderBrowserDialog;',
+    '$f.Description = "Select a directory";',
+    '$f.ShowNewFolderButton = $true;',
+    initial ? `$f.SelectedPath = '${initial.replace(/'/g, "''")}';` : '',
+    '$null = $f.ShowDialog();',
+    '$f.SelectedPath',
+  ].filter(Boolean).join(' ');
+  const result = spawnSync('powershell', ['-NoProfile', '-Command', ps], { timeout: 60000 });
+  const picked = result.stdout?.toString().trim() || '';
+  if (result.error) return res.json({ ok: false, error: result.error.message });
+  if (!picked) return res.json({ ok: false, cancelled: true });
+  res.json({ ok: true, path: picked });
+});
+
 // ── Health ────────────────────────────────────────────────────────────────────
 
 router.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
+});
+
+// ── Firecrawl key test (server-side proxy to avoid CORS) ───────────────────────
+
+router.post('/test-firecrawl', async (req, res) => {
+  const key = req.body?.apiKey || process.env.FIRECRAWL_API_KEY;
+  if (!key) {
+    return res.json({ ok: false, error: 'No Firecrawl API key is configured on the server' });
+  }
+  try {
+    const r = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: 'https://example.com', formats: ['markdown'] }),
+    });
+    if (r.ok) {
+      res.json({ ok: true, message: 'Firecrawl key is valid ✓' });
+    } else {
+      const txt = await r.text().catch(() => '');
+      res.json({ ok: false, error: `HTTP ${r.status} — ${txt.slice(0, 120)}` });
+    }
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
 });
 
 // ── Settings ──────────────────────────────────────────────────────────────────

@@ -5,7 +5,8 @@
   "main": "markdown_html_scraper/markdown_html_scraper_index.js",
   "scripts": {
     "start": "node markdown_html_scraper/markdown_html_scraper_index.js",
-    "dev": "node --watch markdown_html_scraper/markdown_html_scraper_index.js"
+    "dev": "node --watch markdown_html_scraper/markdown_html_scraper_index.js",
+    "playwright-install": "playwright install chromium"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",

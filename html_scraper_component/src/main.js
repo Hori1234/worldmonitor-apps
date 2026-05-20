@@ -56,7 +56,7 @@ async function checkHealth() {
 // ── Service pill health checks ────────────────────────────────────────────────
 
 const SVC_PILLS = [
-  { id: 'scraper-svc', url: 'http://localhost:3737/health' },
+  { id: 'scraper-svc', url: 'http://localhost:3737/api/health' },
   { id: 'kg-svc',      url: 'http://localhost:3738/health' },
   { id: 'nc-svc',      url: 'http://localhost:3003/health' },
 ];

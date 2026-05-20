@@ -42,6 +42,28 @@ router.get('/health', (_req, res) => {
   res.json({ ok: true, status: 'ok', uptime: process.uptime(), unread: unreadCount() });
 });
 
+// ── SMTP connectivity test ─────────────────────────────────────────────────────
+
+router.post('/test-smtp', async (req, res) => {
+  const { host, port, user, pass } = req.body ?? {};
+  if (!host || !user || !pass) {
+    return res.status(400).json({ ok: false, error: 'host, user, and pass are required' });
+  }
+  try {
+    const nodemailer = await import('nodemailer');
+    const transport = nodemailer.default.createTransport({
+      host,
+      port: parseInt(port ?? '587', 10),
+      secure: parseInt(port ?? '587', 10) === 465,
+      auth: { user, pass },
+    });
+    await transport.verify();
+    res.json({ ok: true, message: `SMTP verified — ${host}:${port ?? 587}` });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
+
 // ── Notifications ──────────────────────────────────────────────────────────────
 
 router.get('/notifications', (req, res) => {
